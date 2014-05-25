@@ -1,5 +1,6 @@
 SDCset<-function(DatCol, AcCol, TaCol, ShareCol)
-{	get<-function()	data.frame(DatCol, AcCol , TaCol, ShareCol)
+{	get<-function()	list(DatCol = DatCol, AcCol= AcCol , 
+				TaCol = TaCol, ShareCol = ShareCol)
 
 ##	function() 	namecolAc
 ##	function()	namecolTa
