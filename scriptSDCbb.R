@@ -141,8 +141,8 @@ COMPget <- function(CompCol = COMPCol, COMPTable, SDCget, EventW){
 
 MuAset <- function(SDCRow, SdcCol = SDCCol , IccCol = ICCCol, 
 		CompCol = COMPCol, SDCTable, ICCTable, COMPTable, EventW)
-	
-	{ 		MuaData  <- SDCget(SdcCol, SDCRow, SDCTable)
+			{
+	 		MuaData  <- SDCget(SdcCol, SDCRow, SDCTable)
 			IccData  <- ICCget(IccCol, ICCTable, MuaData, EventW)
 			CompData <- COMPget (CompCol, COMPTable, MuaData, EventW)
 		
@@ -155,11 +155,11 @@ MuAset <- function(SDCRow, SdcCol = SDCCol , IccCol = ICCCol,
 					CompData$AcSic,
 					MuaData$ShareAc
 					))
-}
+			}
 
 makeList <- function(SdcCol = SDCCol , IccCol = ICCCol, CompCol = COMPCol, 
-			SDCTable, ICCTable, COMPTable, EventW)
-			
+		SDCTable, ICCTable, COMPTable, EventW)
+			{
 			intit<- MuAset(1,SdcCol, IccCol, CompCol,
 				SDCTable, ICCTable, COMPTable, EventW)
 
@@ -179,16 +179,45 @@ makeList <- function(SdcCol = SDCCol , IccCol = ICCCol, CompCol = COMPCol,
 			}	
 
 makeList <- function(SdcCol = SDCCol , IccCol = ICCCol, CompCol = COMPCol, 
-			SDCTable, ICCTable, COMPTable, EventW)
-			
+		SDCTable, ICCTable, COMPTable, EventW)
+			{
 			mat <- matrix(rep(NA,nrow()*SP),nrow=nrow(),ncol=SP)
 			SummarySdc <- as.data.frame(mat)
-			for (i in 1:nrow()){
-			temp <- MuAset(i, SdcCol, IccCol, CompCol,
+				
+				for (i in 1:nrow()){
+				temp <- MuAset(i, SdcCol, IccCol, CompCol,
 				SDCTable, ICCTable, COMPTable, EventW)
-			SummarySdc[i,] <- temp
-			}
+				SummarySdc[i,] <- temp
+				}
+			
 			colnames(SummarySdc)<-names(temp)
 			SummarySdc
-			}			
+			}		
+
+SicSeperation <- function(SummarySdc, AcSicCol, TaSicCol)
+			{	
+			Sic0 <- SummarySdc[, AcSicCol] == SummarySdc[, TaSicCol]
+			Sic1 <- substr(SummarySdc[!Sic0, AcSicCol],1,1) != substr(SummarySdc[!Sic0, TaSicCol],1,1)
+			temp <- (Sic1 + Sic0)
+			Sic2 <- substr(SummarySdc[!temp, AcSicCol],2,2) != substr(SummarySdc[!temp, TaSicCol],2,2)
+			temp <- temp + Sic2
+			Sic3 <- substr(SummarySdc[!temp, AcSicCol],3,3) != substr(SummarySdc[!temp, TaSicCol],3,3)
+			temp <- temp + Sic3
+			Sic4 <- substr(SummarySdc[!temp, AcSicCol],4,4) != substr(SummarySdc[!temp, TaSicCol],4,4)
+			
+			list(1stDigit = SummarySdc[Sic1,], 2ndDigit = SummarySdc[Sic2,], 
+			3rdDigit = SummarySdc[Sic3,], 4thDigit = SummarySdc[Sic4,], 
+			sameSic = SummarySdc[Sic0,])
+			} 
+
+				
+
+
+
+
+
+
+
+			
+				
 
