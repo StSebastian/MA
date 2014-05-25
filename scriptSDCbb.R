@@ -41,7 +41,7 @@ ICCset <- function(DatCol, DscdCol, IccCol, SicCol){
 
 
 COMPset<-function(DscdCol, MvCol, SicCol)
-{	get<-function()	data.frame(DscdCol, MvCol, SicCol)
+{	get<-function()	data.frame(DscdCol, MvCol, SicCol, stringsAsFactors=F)
 	
 	setDscd <- function(DSCD) DscdCol <<- DSCD
 	setMv   <- function(MV)  MvCol <<- MV 	
@@ -118,8 +118,9 @@ COMPget <- function(CompCol = COMPCol, COMPTable, SDCget, EventW){
 }	
 
 
-MuAset<-function(SDCRow, SdcCol = SDCCol , IccCol = ICCCol, 
+MuAset <- function(SDCRow, SdcCol = SDCCol , IccCol = ICCCol, 
 		CompCol = COMPCol, SDCTable, ICCTable, COMPTable, EventW)
+	
 	{ 		MuaData  <- SDCget(SdcCol, SDCRow, SDCTable)
 			IccData  <- ICCget(IccCol, ICCTable, MuaData, EventW)
 			CompData <- COMPget (CompCol, COMPTable, MuaData, EventW)
@@ -135,5 +136,38 @@ MuAset<-function(SDCRow, SdcCol = SDCCol , IccCol = ICCCol,
 					))
 }
 
+makeList <- function(SdcCol = SDCCol , IccCol = ICCCol, CompCol = COMPCol, 
+			SDCTable, ICCTable, COMPTable, EventW)
+			
+			intit<- MuAset(1,SdcCol, IccCol, CompCol,
+				SDCTable, ICCTable, COMPTable, EventW)
 
+			mat <- matrix(rep(NA,nrow(SDCTable)*ncol(intit),
+				nrow = nrow(), ncol = ncol(intit)
+			SummarySdc <- as.data.frame(mat)
+			SummarySdc [1,] <- intit
+			
+				for (i in 2:nrow()){
+				temp <- MuAset(i, SdcCol, IccCol, CompCol,
+				SDCTable, ICCTable, COMPTable, EventW)
+				SummarySdc[i,] <- temp
+				}
+			
+			colnames(SummarySdc)<-names(temp)
+			SummarySdc
+			}	
+
+makeList <- function(SdcCol = SDCCol , IccCol = ICCCol, CompCol = COMPCol, 
+			SDCTable, ICCTable, COMPTable, EventW)
+			
+			mat <- matrix(rep(NA,nrow()*SP),nrow=nrow(),ncol=SP)
+			SummarySdc <- as.data.frame(mat)
+			for (i in 1:nrow()){
+			temp <- MuAset(i, SdcCol, IccCol, CompCol,
+				SDCTable, ICCTable, COMPTable, EventW)
+			SummarySdc[i,] <- temp
+			}
+			colnames(SummarySdc)<-names(temp)
+			SummarySdc
+			}			
 
