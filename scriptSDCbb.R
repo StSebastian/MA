@@ -58,12 +58,13 @@ COMPset<-function(DscdCol, MvCol, SicCol)
 
 SDCget<-function(SdcCol = SDCCol, SDCTable, SDCRow){
 	
-	DatCol 	<- SdcCol$get()$DatCol ## "$DatCol" kommt von SDC get() data.frame
+	DatCol 	<- SdcCol$get()$DatCol ## "$DatCol" kommt von SDC get() data.frame	
 	AcquirorCol <- SdcCol$get()$AcCol
 	TargetCol   <- SdcCol$get()$TaCol
 	ShareAcCol  <- SdcCol$get()$ShareCol
 
 	MuaDat       <- SDCTable[SDCRow,DatCol]
+	MuaDat	 <- strptime(MuaDat,"%m.%d.%Y")
 	AcquirorDscd <- SDCTable[SDCRow,AcquirorCol]
 	TargetDscd   <- SDCTable[SDCRow,TargetCol]
 	ShareAc      <- SDCTable[SDCRow,ShareAcCol]
@@ -77,45 +78,65 @@ ICCget <- function(IccCol = ICCCol, ICCTable, SDCget, EventW){
 	DatCol <- IccCol$get()$DatCol ## "$DatCol" kommt von ICC get() data.frame
 	DscdCol <- IccCol$get()$DscdCol
 	IccCol   <- IccCol$get()$IccCol
-	DatColPrae
-	DatColPost
+	
+	DatPrae <- SDCget$MuaDat
+	DatPrae$mon <- DatPrae$mon - EventW
+	DatPost <- SDCget$MuaDat
+	DatPost$mon <- DatPost$mon + EventW
+ 
 	## für SCD Daten brauchst du auch noch prä und post Datum
 	temp  <- ICCTable[, DscdCol] == SDCget$TargetDscd
-	temp 	<- ICCTable[temp, DatColPrae] == SDCget$MuaDat	 	##-x window
+	##temp 	<- ICCTable[temp, DatColPrae] == DatPrae 	##-x window
+	temp 	<- ICCTable[temp, DatCol]
+	temp  <- strptime(temp,"%d/%m/%y")				## hier noch formatierung prüfen
+	temp  <- (temp$mon == (DatPrae$mon)) && (temp$mon$year == DatPrae$year)
 	TaIcc <- ICCTable[temp, IccCol]
 	
-	temp  <- ICCtable[, DscdCol] == SDCget$AcquirorDscd
-	tempprae  <- ICCTable[temp, DatColPrae] == SDCget$MuaDat 	##-x window
-	AcIccPrae <- ICCTable[tempprae, IccCol]
-	temppost  <- ICCTable[temp, DatColPost] == SDCget$MuaDat 	##+x window
-	AcIccPost <- ICCTable[temppost, IccCol]
+	temp  <- ICCTable[, DscdCol] == SDCget$AcquirorDscd
+	##tempprae  <- ICCTable[temp, DatColPrae] == DatPrae 	## hier noch für die Daten aus ICC Tabelle konv
+	temp 	<- ICCTable[temp, DatCol]
+	temp  <- strptime(temp,"%d/%m/%y")				## hier noch formatierung prüfen
+	temp  <- (temp$mon == (DatPrae$mon)) && (temp$mon$year == DatPrae$year)
+	AcIccPrae <- ICCTable[temp, IccCol] 
+	
+	temp  <- ICCTable[, DscdCol] == SDCget$AcquirorDscd
+	##temppost  <- ICCTable[temp, DatColPost] == DatPost 	## hier noch für die Daten aus ICC Tabelle konv
+	temp 	<- ICCTable[temp, DatCol]
+	temp  <- substr(strptime(temp,"%d/%m/%y"),1,7)== substr(DatPost,1,7) ## hier noch formatierung prüfen
+	##temp  <- (temp$mon == (DatPost$mon)) && (temp$mon$year == DatPost$year)
+	AcIccPost <- ICCTable[temp, IccCol]
 
 	list(TaIcc = TaIcc, AcIccPrae = AcIccPrae, AcIccPost = AcIccPost)
 }
 
 
 COMPget <- function(CompCol = COMPCol, COMPTable, SDCget, EventW){
+	
 	DscdCol <- CompCol$get()$DscdCol
 	MvCol
 	SicCol  <- CompCol$get()$SicCol	
-	DatColPrae
-	DatColPost
+	
+	DatPrae <- SDCget$MuaDat
+	DatPrae$mon <- DatPrae$mon - EventW
+	DatPost <- SDCget$MuaDat
+	DatPost$mon <- DatPost$mon + EventW
+	DatColPrae <- substr(colnames(COMPTable),1,7) == substr(DatPrae,1,7)
+	DatColPost <- substr(colnames(COMPTable),1,7) == substr(DatPost,1,7)
 
 	temp <- COMPTable[, DscdCol] == SDCget$TargetDscd
-	temp <- COMPTable[temp, MvCol] == 
-	TaMv <- COMPTable[temp, DatColPrae]		##-x window
+	## temp <- COMPTable[temp, MvCol] == 
+	TaMv <- COMPTable[temp, DatColPrae]		
 	TaSic <- COMPTable[temp, SicCol]
 	
 	temp <- COMPTable[, DscdCol] == SDCget$AcquirorDscd
-	temp <- COMPTable[temp, MvCol] ==
-	AcMvPrae <- COMPTable[temp, DatColPrae] 	##-x window
+	## temp <- COMPTable[temp, MvCol] ==
+	AcMvPrae <- COMPTable[temp, DatColPrae] 	
+	AcMvPost <- COMPTable[temp, DatColPost] 	
 	AcSic <- COMPTable[temp, SicCol]
-	
-	AcMvPost <- COMPTable[temp, DatColPost] 	##+x window
 	
 	list(TaMv = TaMv, AcMvPrae = AcMvPrae, AcMvPost = AcMvPost,
 		TaSic = TaSic, AcSic = AcSic)
-}	
+	}	
 
 
 MuAset <- function(SDCRow, SdcCol = SDCCol , IccCol = ICCCol, 
