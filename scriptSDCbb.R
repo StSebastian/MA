@@ -210,7 +210,7 @@ ICCDiff <- function(SummarySdc, TaIccCol = TaIcc, AcIccPraeCol = AcIccPrae,
 
 
 
-SICSeperation <- function(SummarySdc, AcSicCol, TaSicCol)
+SICSeparation <- function(SummarySdc, AcSicCol, TaSicCol)
 			{	
 			Sic0 <- SummarySdc[, AcSicCol] == SummarySdc[, TaSicCol]
 			Sic1 <- substr(SummarySdc[!Sic0, AcSicCol],1,1) != substr(SummarySdc[!Sic0, TaSicCol],1,1)
@@ -227,7 +227,7 @@ SICSeperation <- function(SummarySdc, AcSicCol, TaSicCol)
 			} 
 
 lapply(x, runif, min = 0, max = 10)
-lapply(SICSeperation, mean)
-sapply(SICSeperation, function(x)mean(x$diffIcc))
+lapply(SICSaperation, mean)
+sapply(SICSaperation, function(x)mean(x$diffIcc))
 	
 
