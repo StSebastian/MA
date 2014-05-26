@@ -110,50 +110,48 @@ ICCget <- function(IccCol = ICCCol, ICCTable, SDCget, EventW){
 }
 
 
-COMPget <- function(CompCol = COMPCol, COMPTable, SDCget, EventW){
+COMPget <- function(CompCol = COMPCol, COMPTable, SDCget, EventW)
+		{
+		DscdCol <- CompCol$get()$DscdCol
+		MvCol
+		SicCol  <- CompCol$get()$SicCol	
 	
-	DscdCol <- CompCol$get()$DscdCol
-	MvCol
-	SicCol  <- CompCol$get()$SicCol	
-	
-	DatPrae <- SDCget$MuaDat
-	DatPrae$mon <- DatPrae$mon - EventW
-	DatPost <- SDCget$MuaDat
-	DatPost$mon <- DatPost$mon + EventW
-	DatColPrae <- substr(colnames(COMPTable),1,7) == substr(DatPrae,1,7)
-	DatColPost <- substr(colnames(COMPTable),1,7) == substr(DatPost,1,7)
+		DatPrae <- SDCget$MuaDat
+		DatPrae$mon <- DatPrae$mon - EventW
+		DatPost <- SDCget$MuaDat
+		DatPost$mon <- DatPost$mon + EventW
+		DatColPrae <- substr(colnames(COMPTable),1,7) == substr(DatPrae,1,7)
+		DatColPost <- substr(colnames(COMPTable),1,7) == substr(DatPost,1,7)
 
-	temp <- COMPTable[, DscdCol] == SDCget$TargetDscd
-	## temp <- COMPTable[temp, MvCol] == 
-	TaMv <- COMPTable[temp, DatColPrae]		
-	TaSic <- COMPTable[temp, SicCol]
+		temp <- COMPTable[, DscdCol] == SDCget$TargetDscd
+		## temp <- COMPTable[temp, MvCol] == 
+		TaMv <- COMPTable[temp, DatColPrae]		
+		TaSic <- COMPTable[temp, SicCol]
 	
-	temp <- COMPTable[, DscdCol] == SDCget$AcquirorDscd
-	## temp <- COMPTable[temp, MvCol] ==
-	AcMvPrae <- COMPTable[temp, DatColPrae] 	
-	AcMvPost <- COMPTable[temp, DatColPost] 	
-	AcSic <- COMPTable[temp, SicCol]
+		temp <- COMPTable[, DscdCol] == SDCget$AcquirorDscd
+		## temp <- COMPTable[temp, MvCol] ==
+		AcMvPrae <- COMPTable[temp, DatColPrae] 	
+		AcMvPost <- COMPTable[temp, DatColPost] 	
+		AcSic <- COMPTable[temp, SicCol]
 	
-	list(TaMv = TaMv, AcMvPrae = AcMvPrae, AcMvPost = AcMvPost,
+		list(TaMv = TaMv, AcMvPrae = AcMvPrae, AcMvPost = AcMvPost,
 		TaSic = TaSic, AcSic = AcSic)
 	}	
 
 
-MuAset <- function(SDCRow, SdcCol = SDCCol , IccCol = ICCCol, 
+MUAset <- function(SDCRow, SdcCol = SDCCol , IccCol = ICCCol, 
 		CompCol = COMPCol, SDCTable, ICCTable, COMPTable, EventW)
 			{
 	 		MuaData  <- SDCget(SdcCol, SDCRow, SDCTable)
 			IccData  <- ICCget(IccCol, ICCTable, MuaData, EventW)
 			CompData <- COMPget (CompCol, COMPTable, MuaData, EventW)
 		
-			data.frame(	c(MuaData$MuaDat, MuaData$AcquirorDscd, 
-					MuaData$TargetDscd,
-					IccData$TaIcc, IccData$AcIccPrae,
-					IccData$AcIccPost, 
-					CompData$TaMv, CompData$AcMvPrae, 
-					CompData$AcMvPost, CompData$TaSic,
-					CompData$AcSic,
-					MuaData$ShareAc
+			data.frame(	c(MuaDat = MuaData$MuaDat, AcquirorDscd = AcMuaData$AcquirorDscd, 
+					TargetDscd = MuaData$TargetDscd, TaIcc = IccData$TaIcc, 
+					AcIccPrae = IccData$AcIccPrae, AcIccPost = IccData$AcIccPost, 
+					TaMv = CompData$TaMv, AcMvPrae = CompData$AcMvPrae, 
+					AcMvPost = CompData$AcMvPost, TaSic = CompData$TaSic,
+					AcSic = CompData$AcSic, ShareAc = MuaData$ShareAc
 					))
 			}
 
@@ -178,6 +176,7 @@ makeList <- function(SdcCol = SDCCol , IccCol = ICCCol, CompCol = COMPCol,
 			SummarySdc
 			}	
 
+
 makeList <- function(SdcCol = SDCCol , IccCol = ICCCol, CompCol = COMPCol, 
 		SDCTable, ICCTable, COMPTable, EventW)
 			{
@@ -194,7 +193,24 @@ makeList <- function(SdcCol = SDCCol , IccCol = ICCCol, CompCol = COMPCol,
 			SummarySdc
 			}		
 
-SicSeperation <- function(SummarySdc, AcSicCol, TaSicCol)
+
+ICCDiff <- function(SummarySdc, TaIccCol = TaIcc, AcIccPraeCol = AcIccPrae,
+		AcIccPostCol = AcIccPost, TaMvCol = TaMv, AcMvPraeCol =  AcMvPrae
+		AcMvPostCol = AcMvPost)
+			{
+			temp <- SummarySdc$TaIccCol * SummarySdc$TaMvCol
+			temp <- temp + (SummarySdc$AcIccPrae * SummarySdc$AcMvPraeCol)
+			temp <- temp/(SummarySdc$TaMvCol + SummarySdc$AcMvPraeCol)
+
+			SummarySdcCalc <- cbind(SummarySdc, "weightedIcc" = temp)
+			
+			temp <- SummarySdc$AcIccPostCol - temp
+			SummarySdcCalc <- cbind(SummarySdcCalc, "diffIcc" = temp) 
+			}
+
+
+
+SICSeperation <- function(SummarySdc, AcSicCol, TaSicCol)
 			{	
 			Sic0 <- SummarySdc[, AcSicCol] == SummarySdc[, TaSicCol]
 			Sic1 <- substr(SummarySdc[!Sic0, AcSicCol],1,1) != substr(SummarySdc[!Sic0, TaSicCol],1,1)
@@ -210,14 +226,8 @@ SicSeperation <- function(SummarySdc, AcSicCol, TaSicCol)
 			sameSic = SummarySdc[Sic0,])
 			} 
 
-				
-
-
-
-
-
-
-
-			
-				
+lapply(x, runif, min = 0, max = 10)
+lapply(SICSeperation, mean)
+sapply(SICSeperation, function(x)mean(x$diffIcc))
+	
 
