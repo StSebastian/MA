@@ -23,7 +23,8 @@ def<-SDCset("SP1","SP4","SP8")
 
 ICCset <- function(DatCol, DscdCol, IccCol, SicCol){
 	
-	get <- function()	data.frame(DatCol, DscdCol , IccCol, SicCol)
+	get <- function()	data.frame(DatCol, DscdCol , IccCol, SicCol,
+					stringsAsFactors = F)
 	
 	setDat  <- function(DAT) DatCol <<- DAT
 	setDscd <-  function(DSCD)  DscdCol <<- DSCD 	
@@ -64,7 +65,7 @@ SDCget<-function(SdcCol = SDCCol, SDCTable, SDCRow){
 	ShareAcCol  <- SdcCol$get()$ShareCol
 
 	MuaDat       <- SDCTable[SDCRow,DatCol]
-	MuaDat	 <- strptime(MuaDat,"%m.%d.%Y")
+	## MuaDat	 <- strptime(MuaDat,"%m.%d.%Y")
 	AcquirorDscd <- SDCTable[SDCRow,AcquirorCol]
 	TargetDscd   <- SDCTable[SDCRow,TargetCol]
 	ShareAc      <- SDCTable[SDCRow,ShareAcCol]
@@ -78,33 +79,47 @@ ICCget <- function(IccCol = ICCCol, ICCTable, SDCget, EventW){
 	DatCol <- IccCol$get()$DatCol ## "$DatCol" kommt von ICC get() data.frame
 	DscdCol <- IccCol$get()$DscdCol
 	IccCol   <- IccCol$get()$IccCol
+	ICCTab <- ICCTable[,c(DatCol,DscdCol,IccCol)]
 	
-	DatPrae <- SDCget$MuaDat
+	DatPrae <- as.POSIXlt(SDCget$MuaDat)
 	DatPrae$mon <- DatPrae$mon - EventW
-	DatPost <- SDCget$MuaDat
+	DatPrae <- as.Date(DatPrae)
+	DatPost <- as.POSIXlt(SDCget$MuaDat)
 	DatPost$mon <- DatPost$mon + EventW
- 
+ 	DatPost <- as.Date(DatPost)
+	
 	## für SCD Daten brauchst du auch noch prä und post Datum
-	temp  <- ICCTable[, DscdCol] == SDCget$TargetDscd
-	##temp 	<- ICCTable[temp, DatColPrae] == DatPrae 	##-x window
-	temp 	<- ICCTable[temp, DatCol]
-	temp  <- strptime(temp,"%d/%m/%y")				## hier noch formatierung prüfen
-	temp  <- (temp$mon == (DatPrae$mon)) && (temp$mon$year == DatPrae$year)
-	TaIcc <- ICCTable[temp, IccCol]
+	temp  <- ICCTab[, DscdCol] == SDCget$TargetDscd
+	temp  <- ICCTab[temp, c(DatCol,IccCol)]
+	tempDat <- substr(temp[,DatCol],1,7)== substr(DatPrae,1,7)
+	TaIcc <- temp[tempDat, IccCol]
+	##temp  <- ICCTable[temp, DatColPrae] == DatPrae 	##-x window
+	##temp 	<- ICCTable[temp, DatCol]
+	##temp  <- strptime(temp,"%d/%m/%y")				## hier noch formatierung prüfen
+	##temp  <- (temp$mon == (DatPrae$mon)) && (temp$mon$year == DatPrae$year)
+	##temp  <- substr(temp,1,7)== substr(DatPrae,1,7)
+	##TaIcc <- ICCTable[temp, IccCol]
 	
-	temp  <- ICCTable[, DscdCol] == SDCget$AcquirorDscd
+	temp  <- ICCTab[, DscdCol] == SDCget$AcquirorDscd
+	tempAC  <- ICCTab[temp, c(DatCol,IccCol)]
+	tempDat <- substr(tempAC[,DatCol],1,7)== substr(DatPrae,1,7)
+	AcIccPrae <- tempAC[tempDat, IccCol]
+	##temp  <- ICCTable[, DscdCol] == SDCget$AcquirorDscd
 	##tempprae  <- ICCTable[temp, DatColPrae] == DatPrae 	## hier noch für die Daten aus ICC Tabelle konv
-	temp 	<- ICCTable[temp, DatCol]
-	temp  <- strptime(temp,"%d/%m/%y")				## hier noch formatierung prüfen
-	temp  <- (temp$mon == (DatPrae$mon)) && (temp$mon$year == DatPrae$year)
-	AcIccPrae <- ICCTable[temp, IccCol] 
+	##temp 	<- ICCTable[temp, DatCol]
+	##temp  <- strptime(temp,"%d/%m/%y")				## hier noch formatierung prüfen
+	##temp  <- (temp$mon == (DatPrae$mon)) && (temp$mon$year == DatPrae$year)
+	##temp    <- substr(temp,1,7)== substr(DatPrae,1,7)
+	##AcIccPrae <- ICCTable[temp, IccCol] 
 	
-	temp  <- ICCTable[, DscdCol] == SDCget$AcquirorDscd
+	tempDat <- substr(tempAC[,DatCol],1,7)== substr(DatPost,1,7)
+	AcIccPost <- tempAC[tempDat, IccCol]
+	##temp  <- ICCTable[, DscdCol] == SDCget$AcquirorDscd
 	##temppost  <- ICCTable[temp, DatColPost] == DatPost 	## hier noch für die Daten aus ICC Tabelle konv
-	temp 	<- ICCTable[temp, DatCol]
-	temp  <- substr(strptime(temp,"%d/%m/%y"),1,7)== substr(DatPost,1,7) ## hier noch formatierung prüfen
+	##temp 	<- ICCTable[temp, DatCol]
+	##temp  <- substr(temp,1,7)== substr(DatPost,1,7) ## hier noch formatierung prüfen
 	##temp  <- (temp$mon == (DatPost$mon)) && (temp$mon$year == DatPost$year)
-	AcIccPost <- ICCTable[temp, IccCol]
+	##AcIccPost <- ICCTable[temp, IccCol]
 
 	list(TaIcc = TaIcc, AcIccPrae = AcIccPrae, AcIccPost = AcIccPost)
 }
@@ -233,4 +248,33 @@ lapply(x, runif, min = 0, max = 10)
 lapply(SICSaperation, mean)
 sapply(SICSaperation, function(x)mean(x$diffIcc))
 	
+testF <- function(SDCTab,SDCCol){
+	laenge <- 1800
+	test2 <- as.data.frame(matrix(rep(NA,4*laenge),nrow=laenge,ncol=4))
+	for (i in 1:laenge){ 
+	temp <- SDCget(SDCCol,SDCTab,i)
+	test2[i,] <- c(as.character(temp$MuaDat), temp$AcquirorDscd, temp$TargetDscd, temp$ShareAc)	
+	}
+	names(test2)<-names(SDCCol$get())
+	test2
+	}
 
+testG <- function(SDCTab,SDCCol,ICCCol,ICCTab,eventW){
+	laenge <- 1800
+	test2 <- as.data.frame(matrix(rep(NA,7*laenge),nrow=laenge,ncol=7))
+	for (i in 1:laenge){ 
+	temp  <- SDCget(SDCCol,SDCTab,i)
+	temp2 <- ICCget(ICCCol,ICCTab,temp,eventW)
+	
+	temp2$TaIcc <- if(length(temp2$TaIcc) == 0)NA else temp2$TaIcc
+	temp2$AcIccPrae <- if(length(temp2$AcIccPrae) == 0)NA else temp2$AcIccPrae
+	temp2$AcIccPost <- if(length(temp2$AcIccPost) == 0)NA else temp2$AcIccPost
+
+	test2[i,] <- c(as.character(temp$MuaDat), temp$AcquirorDscd, temp$TargetDscd, 
+		temp$ShareAc,
+		 temp2$TaIcc, temp2$AcIccPrae, temp2$AcIccPost)	
+	}
+	names(test2)<-names(SDCCol$get())
+	test2
+	}
+testob<-testG(SDCTab,SDCCol,ICCCol,ICCTab,12)
