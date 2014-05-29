@@ -1,6 +1,6 @@
-SDCset<-function(DatCol, AcCol, TaCol, ShareCol)
-{	get<-function()	list(DatCol = DatCol, AcCol= AcCol , 
-				TaCol = TaCol, ShareCol = ShareCol)
+SDCset<-function(DatCol, AcCol, TaCol, ShareCol, SicAcCol, SicTaCol)
+{	get<-function()	data.frame(DatCol, AcCol, TaCol, ShareCol, 
+				SicAcCol, SicTaCol, stringsAsFactors = F)
 
 ##	function() 	namecolAc
 ##	function()	namecolTa
@@ -9,10 +9,13 @@ SDCset<-function(DatCol, AcCol, TaCol, ShareCol)
 	setAc    <-  function(AC)  AcCol <<- AC 	
 	setTa    <-  function(TA)  TaCol <<- TA
 	setShare <-  function(SHARE)  ShareCol <<- SHARE
+	setSicAc <-  function(SAc) SicAcCol <<- SAc
+	setSicTa <-  function(STa) SicTaCol <<- STa
 	
 	SDCCol <<- list(get = get, setDat = setDat,
 			setAc = setAc, setTa = setTa, 
-			setShare = setShare)
+			setShare = setShare, setSicAc = setSicAc,
+			setSicTa = setSicTa)
 	##list(get = get, setDat = setDat, 
 	##	setAc = setAc, setTa = setTa)
 	SDCCol
@@ -57,36 +60,51 @@ COMPset<-function(DscdCol, MvCol, SicCol)
 }
 
 
-SDCget<-function(SdcCol = SDCCol, SDCTable, SDCRow){
+SDCget<-function(SdcCol = SDCCol, SDCTable, SDCRow, EventW){
 	
 	DatCol 	<- SdcCol$get()$DatCol ## "$DatCol" kommt von SDC get() data.frame	
 	AcquirorCol <- SdcCol$get()$AcCol
 	TargetCol   <- SdcCol$get()$TaCol
 	ShareAcCol  <- SdcCol$get()$ShareCol
+	SicAcqCol	<- SdcCol$get()$SicAcCol
+	SicTarCol    <- SdcCol$get()$SicTaCol
 
 	MuaDat       <- SDCTable[SDCRow,DatCol]
 	## MuaDat	 <- strptime(MuaDat,"%m.%d.%Y")
+		
+	MuaDatPrae <- as.POSIXlt(MuaDat)
+	MuaDatPrae$mon <- MuaDatPrae$mon - EventW
+	MuaDatPrae <- as.Date(MuaDatPrae)
+	MuaDatPost <- as.POSIXlt(MuaDat)
+	MuaDatPost$mon <- MuaDatPost$mon + EventW
+ 	MuaDatPost <- as.Date(MuaDatPost)
+
 	AcquirorDscd <- SDCTable[SDCRow,AcquirorCol]
 	TargetDscd   <- SDCTable[SDCRow,TargetCol]
 	ShareAc      <- SDCTable[SDCRow,ShareAcCol]
+	SicAc		 <- SDCTable[SDCRow,SicAcqCol]	
+	SicTa		 <- SDCTable[SDCRow,SicTarCol]	
 	
-	list(MuaDat = MuaDat, AcquirorDscd = AcquirorDscd,
-		TargetDscd = TargetDscd, ShareAc = ShareAc)
+	list( MuaDat= MuaDat, MuaDatPrae = MuaDatPrae, MuaDatPost = MuaDatPost, 
+		AcquirorDscd = AcquirorDscd, TargetDscd = TargetDscd, 
+		ShareAc = ShareAc, SicAc = SicAc, SicTa = SicTa)
 }
 
 
-ICCget <- function(IccCol = ICCCol, ICCTable, SDCget, EventW){
+ICCget <- function(IccCol = ICCCol, ICCTable, SDCget){
 	DatCol <- IccCol$get()$DatCol ## "$DatCol" kommt von ICC get() data.frame
 	DscdCol <- IccCol$get()$DscdCol
 	IccCol   <- IccCol$get()$IccCol
+	DatPrae <- SDCget$MuaDatPrae
+	DatPost <- SDCget$MuaDatPost
 	ICCTab <- ICCTable[,c(DatCol,DscdCol,IccCol)]
 	
-	DatPrae <- as.POSIXlt(SDCget$MuaDat)
-	DatPrae$mon <- DatPrae$mon - EventW
-	DatPrae <- as.Date(DatPrae)
-	DatPost <- as.POSIXlt(SDCget$MuaDat)
-	DatPost$mon <- DatPost$mon + EventW
- 	DatPost <- as.Date(DatPost)
+	##DatPrae <- as.POSIXlt(SDCget$MuaDat)
+	##DatPrae$mon <- DatPrae$mon - EventW
+	##DatPrae <- as.Date(DatPrae)
+	##DatPost <- as.POSIXlt(SDCget$MuaDat)
+	##DatPost$mon <- DatPost$mon + EventW
+ 	##DatPost <- as.Date(DatPost)
 	
 	## für SCD Daten brauchst du auch noch prä und post Datum
 	temp  <- ICCTab[, DscdCol] == SDCget$TargetDscd
@@ -125,16 +143,19 @@ ICCget <- function(IccCol = ICCCol, ICCTable, SDCget, EventW){
 }
 
 
-COMPget <- function(CompCol = COMPCol, COMPTable, SDCget, EventW)
+COMPget <- function(CompCol = COMPCol, COMPTable, SDCget)
 		{
 		DscdCol <- CompCol$get()$DscdCol
 		MvCol
 		SicCol  <- CompCol$get()$SicCol	
-	
-		DatPrae <- SDCget$MuaDat
-		DatPrae$mon <- DatPrae$mon - EventW
-		DatPost <- SDCget$MuaDat
-		DatPost$mon <- DatPost$mon + EventW
+		DatPrae <- SDCget$MuaDatPrae
+		DatPost <- SDCget$MuaDatPost	
+
+		##DatPrae <- SDCget$MuaDat
+		##DatPrae$mon <- DatPrae$mon - EventW
+		##DatPost <- SDCget$MuaDat
+		##DatPost$mon <- DatPost$mon + EventW
+		
 		DatColPrae <- substr(colnames(COMPTable),1,7) == substr(DatPrae,1,7)
 		DatColPost <- substr(colnames(COMPTable),1,7) == substr(DatPost,1,7)
 
@@ -227,6 +248,10 @@ ICCDiff <- function(SummarySdc, TaIccCol = TaIcc, AcIccPraeCol = AcIccPrae,
 
 SICSeparation <- function(SummarySdc, AcSicCol, TaSicCol)
 			{	
+			SummarySdc$TaIcc <- as.numeric(SummarySdc$TaIcc)
+			SummarySdc$AcIccPrae <- as.numeric(SummarySdc$AcIccPrae)
+			SummarySdc$AcIccPost <- as.numeric(SummarySdc$AcIccPost)
+
 			Sic0 <- SummarySdc[, AcSicCol] == SummarySdc[, TaSicCol]
 			Sic1 <- substr(SummarySdc[, AcSicCol],1,1) != substr(SummarySdc[, TaSicCol],1,1)
 			temp <- (Sic1 | Sic0)
@@ -244,16 +269,47 @@ SICSeparation <- function(SummarySdc, AcSicCol, TaSicCol)
 			"sameSic" = SummarySdc[Sic0,])
 			} 
 
+Summarylist	<- function(SicSeperation)
+			{
+			temp <- SicSeperation$firstDigit[,c("TaIcc","AcIccPrae","AcIccPost")]
+				print("firstDigit")
+				temp2<-nrow(temp)	
+				print(temp2)
+				print(summary(temp))
+			temp <- SicSeperation$secDigit[,c("TaIcc","AcIccPrae","AcIccPost")]
+				print("secDigit")
+				temp2<-nrow(temp)	
+				print(temp2)
+				print(summary(temp))
+			temp <- SicSeperation$thirdDigit[,c("TaIcc","AcIccPrae","AcIccPost")]
+				print("thirdDigit")
+				temp2<-nrow(temp)	
+				print(temp2)
+				print(summary(temp))
+			temp <- SicSeperation$fourthDigit[,c("TaIcc","AcIccPrae","AcIccPost")]
+				print("fourthDigit")
+				temp2<-nrow(temp)	
+				print(temp2)
+				print(summary(temp))
+			temp <- SicSeperation$sameSic[,c("TaIcc","AcIccPrae","AcIccPost")]
+				print("sameSic")
+				temp2<-nrow(temp)	
+				print(temp2)
+				print(summary(temp))
+			}
+
+
 lapply(x, runif, min = 0, max = 10)
 lapply(SICSaperation, mean)
 sapply(SICSaperation, function(x)mean(x$diffIcc))
 	
-testF <- function(SDCTab,SDCCol){
+testF <- function(SDCTab,SDCCol,eventW){
 	laenge <- 1800
-	test2 <- as.data.frame(matrix(rep(NA,4*laenge),nrow=laenge,ncol=4))
+	test2 <- as.data.frame(matrix(rep(NA,6*laenge),nrow=laenge,ncol=6))
 	for (i in 1:laenge){ 
-	temp <- SDCget(SDCCol,SDCTab,i)
-	test2[i,] <- c(as.character(temp$MuaDat), temp$AcquirorDscd, temp$TargetDscd, temp$ShareAc)	
+	temp <- SDCget(SDCCol,SDCTab,i,eventW)
+	test2[i,] <- c(as.character(temp$MuaDat), temp$AcquirorDscd, temp$TargetDscd, 
+			temp$ShareAc, temp$SicAc, temp$SicTa)	
 	}
 	names(test2)<-names(SDCCol$get())
 	test2
@@ -261,20 +317,20 @@ testF <- function(SDCTab,SDCCol){
 
 testG <- function(SDCTab,SDCCol,ICCCol,ICCTab,eventW){
 	laenge <- 1800
-	test2 <- as.data.frame(matrix(rep(NA,7*laenge),nrow=laenge,ncol=7))
+	test2 <- as.data.frame(matrix(rep(NA,9*laenge),nrow=laenge,ncol=9))
 	for (i in 1:laenge){ 
-	temp  <- SDCget(SDCCol,SDCTab,i)
-	temp2 <- ICCget(ICCCol,ICCTab,temp,eventW)
+	temp  <- SDCget(SDCCol,SDCTab,i,eventW)
+	temp2 <- ICCget(ICCCol,ICCTab,temp)
 	
 	temp2$TaIcc <- if(length(temp2$TaIcc) == 0)NA else temp2$TaIcc
 	temp2$AcIccPrae <- if(length(temp2$AcIccPrae) == 0)NA else temp2$AcIccPrae
 	temp2$AcIccPost <- if(length(temp2$AcIccPost) == 0)NA else temp2$AcIccPost
 
 	test2[i,] <- c(as.character(temp$MuaDat), temp$AcquirorDscd, temp$TargetDscd, 
-		temp$ShareAc,
-		 temp2$TaIcc, temp2$AcIccPrae, temp2$AcIccPost)	
+		temp$ShareAc, temp$SicAc , temp$SicTa ,
+		temp2$TaIcc, temp2$AcIccPrae, temp2$AcIccPost)	
 	}
-	names(test2)<-names(SDCCol$get())
+	names(test2)<-c(names(SDCCol$get()),names(temp2))
 	test2
 	}
 testob<-testG(SDCTab,SDCCol,ICCCol,ICCTab,12)
