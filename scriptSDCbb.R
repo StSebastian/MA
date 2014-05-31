@@ -70,7 +70,9 @@ EventWset <- function(PraeStart, PraeLast, PostStart, PostLast, MinObs)
 EventWget <- function(Datum, EventW)
 	{
 	Datum <- as.POSIXlt(Datum) 
-	DatPost <- DatPrae <- rep(Datum,12)
+	DatPost <- rep(Datum,EventW$PraeLast - EventW$PraeStart)
+	DatPrae <- rep(Datum,EventW$PostLast - EventW$PostStart)
+
 	
 	DatPrae$mon <- (EventW$PraeStart:EventW$PraeLast)+DatPrae$mon
 	DatPost$mon <- (EventW$PostStart:EventW$PostLast)+DatPost$mon
