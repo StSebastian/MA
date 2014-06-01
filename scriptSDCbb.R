@@ -43,22 +43,49 @@ ICCset <- function(DatCol, DscdCol, IccCol){
 }
 
 
-COMPset <- function(DscdCol, MvCol, SicCol)
-{	get <- function()	data.frame(DscdCol, MvCol, SicCol, stringsAsFactors=F)
-	
+COMPset <- function(DscdCol, FactorCol, SicCol)
+	{	
+	FactorList <- NULL
+	get <- function()	list(DscdCol = DscdCol, FactorCol =FactorCol, 
+					SicCol = SicCol, FactorList = FactorList)
 	setDscd <- function(DSCD) DscdCol <<- DSCD
-	setMv   <- function(MV)  MvCol <<- MV 	
 	setSic  <- function(SIC) SicCol <<- SIC	
-
-	COMPCol <<- list(get = get, setDscd = setDscd, 
-			setMv = setMv, setSic = setSic)
+	setFactor <- function(FactorC) FactorCol <<- FactorC
+	setFactorList <- function(Factor) FactorList <<- Factor 
 	
-	##list(get = get, setDSCD = setDSCD, 
-	##	setMV = setMV)
+	COMPCol <<- list(get = get, setDscd = setDscd, 
+			setFactor = setFactor, setSic = setSic,
+			setFactorList = setFactorList)
+	
 	COMPCol
 }
 
+FactorAdd <- function(COMPTable, COMPCol)
+	{ 
+		FactorCol <- COMPCol$get()$FactorCol
+		FactorCol <- COMPTable[,FactorCol]
+		FactorCol <- as.factor(FactorCol)		
 
+		Factors <- levels(FactorCol)
+		FactorMat <- sapply(1:length(Factors),function(x){Factors[x]==FactorCol })
+		colnames(FactorMat) <- Factors
+		FactorMat <- as.data.frame(FactorMat)
+		##COMPCol[[length(COMPCol)+1]] <- FactorMat
+		COMPCol$setFactorList(FactorMat)
+		COMPCol$get()	
+	}
+
+NameCompCol <- function(COMPTable, NChar, StartDate)
+	{
+	StartDate <- as.POSIXlt( StartDate)
+	number <- ncol(COMPTable) - NChar
+	temp <- rep(StartDate,number)
+	temp$mon <- temp$mon + 0:(number-1)
+	temp <- substr(as.Date(temp),1,7)
+	names(COMPTable) <- c(names(COMPTable[,1:NChar]),temp)
+	COMPTable
+	}
+		
 EventWset <- function(PraeStart, PraeLast, PostStart, PostLast, MinObs)
 	{	
 	list(PraeStart = PraeStart, PraeLast = PraeLast, 
@@ -70,8 +97,8 @@ EventWset <- function(PraeStart, PraeLast, PostStart, PostLast, MinObs)
 EventWget <- function(Datum, EventW)
 	{
 	Datum <- as.POSIXlt(Datum) 
-	DatPost <- rep(Datum,EventW$PraeLast - EventW$PraeStart)
-	DatPrae <- rep(Datum,EventW$PostLast - EventW$PostStart)
+	DatPrae <- rep(Datum,EventW$PraeLast - EventW$PraeStart+1)
+	DatPost <- rep(Datum,EventW$PostLast - EventW$PostStart+1)
 
 	
 	DatPrae$mon <- (EventW$PraeStart:EventW$PraeLast)+DatPrae$mon
@@ -96,14 +123,6 @@ SDCget <- function(SdcCol = SDCCol, SDCTable, SDCRow, EVENTWset)
 	Datum     <- SDCTable[SDCRow,DatCol]
 	
 	MuaDat      <- EventWget(Datum, EVENTWset)
-
-	## MuaDat	 <- strptime(MuaDat,"%m.%d.%Y")
-	##MuaDatPrae <- as.POSIXlt(MuaDat)
-	##MuaDatPrae$mon <- MuaDatPrae$mon - EventW
-	##MuaDatPrae <- as.Date(MuaDatPrae)
-	##MuaDatPost <- as.POSIXlt(MuaDat)
-	##MuaDatPost$mon <- MuaDatPost$mon + EventW
- 	##MuaDatPost <- as.Date(MuaDatPost)
 
 	AcquirorDscd <- SDCTable[SDCRow,AcquirorCol]
 	TargetDscd   <- SDCTable[SDCRow,TargetCol]
@@ -166,35 +185,32 @@ ICCget <- function(IccCol = ICCCol, ICCTable, SDCget){
 }
 
 
-COMPget <- function(CompCol = COMPCol, COMPTable, SDCget)
+COMPget <- function(CompCol = COMPCol, CompTable, SDCget)
 		{
+		FactorCol <- CompCol$get()$FactorList
+		FactorCol <- FactorCol$MV
 		DscdCol <- CompCol$get()$DscdCol
-		MvCol
-		SicCol  <- CompCol$get()$SicCol	
-		DatPrae <- SDCget$MuaDatPrae
-		DatPost <- SDCget$MuaDatPost	
-
-		##DatPrae <- SDCget$MuaDat
-		##DatPrae$mon <- DatPrae$mon - EventW
-		##DatPost <- SDCget$MuaDat
-		##DatPost$mon <- DatPost$mon + EventW
+		##MvCol
+		##SicCol  <- CompCol$get()$SicCol	
+		DatPrae <- SDCget$MuaDat$DatPrae
+		DatPost <- SDCget$MuaDat$DatPost
 		
-		DatColPrae <- substr(colnames(COMPTable),1,7) == substr(DatPrae,1,7)
-		DatColPost <- substr(colnames(COMPTable),1,7) == substr(DatPost,1,7)
+		CompTablePrae <- CompTable[FactorCol ,c(DscdCol, DatPrae)]
+		CompTablePost <- CompTable[FactorCol ,c(DscdCol, DatPost)]
+		
+		temp <- CompTablePrae[,DscdCol] == SDCget$TargetDscd
+		CompRowTa <- CompTablePrae[temp,DatPrae]	
+		TaMv <- rowMeans(CompRowTa,na.rm=T)
+		
+		temp <- CompTablePrae[,DscdCol] == SDCget$AcquirorDscd
+		CompRowAc <- CompTablePrae[temp,DatPrae]	
+		AcMvPrae <- rowMeans(CompRowAc,na.rm=T)
 
-		temp <- COMPTable[, DscdCol] == SDCget$TargetDscd
-		## temp <- COMPTable[temp, MvCol] == 
-		TaMv <- COMPTable[temp, DatColPrae]		
-		TaSic <- COMPTable[temp, SicCol]
+		CompRowAc <- CompTablePost[temp,DatPost]	
+		AcMvPost <- rowMeans(CompRowAc,na.rm=T)
 	
-		temp <- COMPTable[, DscdCol] == SDCget$AcquirorDscd
-		## temp <- COMPTable[temp, MvCol] ==
-		AcMvPrae <- COMPTable[temp, DatColPrae] 	
-		AcMvPost <- COMPTable[temp, DatColPost] 	
-		AcSic <- COMPTable[temp, SicCol]
-	
-		list(TaMv = TaMv, AcMvPrae = AcMvPrae, AcMvPost = AcMvPost,
-		TaSic = TaSic, AcSic = AcSic)
+		list(TaMv = TaMv, AcMvPrae = AcMvPrae, AcMvPost = AcMvPost)
+		##TaSic = TaSic, AcSic = AcSic)
 	}	
 
 
@@ -326,24 +342,34 @@ lapply(x, runif, min = 0, max = 10)
 lapply(SICSaperation, mean)
 sapply(SICSaperation, function(x)mean(x$diffIcc))
 	
-testF <- function(SDCTab,SDCCol,eventW){
-	laenge <- 1800
-	test2 <- as.data.frame(matrix(rep(NA,6*laenge),nrow=laenge,ncol=6))
-	for (i in 1:laenge){ 
-	temp <- SDCget(SDCCol,SDCTab,i,eventW)
-	test2[i,] <- c(as.character(temp$Datum), temp$AcquirorDscd, temp$TargetDscd, 
-			temp$ShareAc, temp$SicAc, temp$SicTa)	
-	}
-	names(test2)<-names(SDCCol$get())
-	test2
-	}
-
-testG <- function(SDCTab,SDCCol,ICCCol,ICCTab,eventW){
+testF <- function(SDCTab,SDCCol,COMPTab,COMPCol,eventW){
 	laenge <- 1800
 	test2 <- as.data.frame(matrix(rep(NA,9*laenge),nrow=laenge,ncol=9))
+	FactorAdd(COMPTab,COMPCol)
+	##print(COMPCol1)
+	for (i in 1:laenge){ 
+	temp <- SDCget(SDCCol,SDCTab,i,eventW)
+	temp2 <- COMPget(COMPCol, COMPTab, temp)
+	temp2$TaMv <- if(length(temp2$TaMv) == 0)NA else temp2$TaMv
+	temp2$AcMvPrae <- if(length(temp2$AcMvPrae) == 0)NA else temp2$AcMvPrae
+	temp2$AcMvPost <- if(length(temp2$AcMvPost) == 0)NA else temp2$AcMvPost
+	test2[i,] <- c(as.character(temp$Datum), temp$AcquirorDscd, temp$TargetDscd, 
+			temp$ShareAc, temp$SicAc, temp$SicTa,
+			temp2$TaMv, temp2$AcMvPrae, temp2$AcMvPost)	
+	}
+	names(test2)<-c(names(SDCCol$get()),names(temp2))
+	test2
+	}
+test1<-testF(def,SDCset2,tempo2,COMPset3,EventW2)
+
+
+testG <- function(SDCTab,ICCTab,COMBTab,SDCCol,ICCCol,COMPCol,ICCTab,eventW){
+	laenge <- 1800
+	test2 <- as.data.frame(matrix(rep(NA,12*laenge),nrow=laenge,ncol=12))
 	for (i in 1:laenge){ 
 	temp  <- SDCget(SDCCol,SDCTab,i,eventW)
 	temp2 <- ICCget(ICCCol,ICCTab,temp)
+	temp3 <- COMPget(COMPCol,COMPTab,temp)
 	
 	##temp2$TaIcc <- if(length(temp2$TaIcc) == 0)NA else temp2$TaIcc
 	##temp2$AcIccPrae <- if(length(temp2$AcIccPrae) == 0)NA else temp2$AcIccPrae
@@ -351,9 +377,10 @@ testG <- function(SDCTab,SDCCol,ICCCol,ICCTab,eventW){
 
 	test2[i,] <- c(as.character(temp$Datum), temp$AcquirorDscd, temp$TargetDscd, 
 		temp$ShareAc, temp$SicAc , temp$SicTa ,
-		temp2$TaIcc, temp2$AcIccPrae, temp2$AcIccPost)	
+		temp2$TaIcc, temp2$AcIccPrae, temp2$AcIccPost,
+		temp3$TaMv, temp3$AcMvPrae, temp3$AcMvPost)	
 	}
-	names(test2)<-c(names(SDCCol$get()),names(temp2))
+	names(test2)<-c(names(SDCCol$get()),names(temp2),names(temp3))
 	test2
 	}
 testob<-testG(SDCTab,SDCCol,ICCCol,ICCTab,12)
