@@ -145,7 +145,8 @@ CharacAdd <- function(COMPTable, COMPCol)
 		CharacMat <- as.data.frame(CharacMat)
 		##COMPCol[[length(COMPCol)+1]] <- CharacMat
 		COMPCol$setCharacList(CharacMat)
-		COMPCol$get()	
+		##COMPCol$get()	
+		COMPCol
 	}
 
 
@@ -298,9 +299,9 @@ ICCget <- function(IccCol = ICCCol, ICCTable, SDCget){
 
 COMPget <- function(CompCol = COMPCol, CompTable, SDCget)
 		{
-		CharacCol <- CompCol$CharacList
+		CharacCol <- CompCol$get()$CharacList
 		CharacCol <- CharacCol$MV
-		DscdCol <- CompCol$DscdCol
+		DscdCol <- CompCol$get()$DscdCol
 		##MvCol
 		##SicCol  <- CompCol$get()$SicCol	
 		DatPrae <- SDCget$MuaDat$DatPrae
@@ -324,9 +325,130 @@ COMPget <- function(CompCol = COMPCol, CompTable, SDCget)
 		##TaSic = TaSic, AcSic = AcSic)
 	}	
 
-temp1 <- SDCget(SDCset3, SDCTab3, 1, EventWset3)
-temp2 <- ICCget(ICCset3, ICCTab3, temp1)
-temp3 <- COMPget(COMPset3, COMPTab3, temp1)
+
+
+## ****************************************************************************
+
+SumTab <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,eventW){
+	laenge <- 1800
+	test2 <- as.data.frame(matrix(rep(NA,12*laenge),nrow=laenge,ncol=12))
+	for (i in 1:laenge){ 
+	temp  <- SDCget(SDCCol,SDCTab,i,eventW)
+	temp2 <- ICCget(ICCCol,ICCTab,temp)
+	temp3 <- COMPget(COMPCol,COMPTab,temp)
+	
+	##temp2$TaIcc <- if(length(temp2$TaIcc) == 0)NA else temp2$TaIcc
+	##temp2$AcIccPrae <- if(length(temp2$AcIccPrae) == 0)NA else temp2$AcIccPrae
+	##temp2$AcIccPost <- if(length(temp2$AcIccPost) == 0)NA else temp2$AcIccPost
+	
+	temp3$TaMv <- if(length(temp3$TaMv) == 0)NA else temp3$TaMv
+	temp3$AcMvPrae <- if(length(temp3$AcMvPrae) == 0)NA else temp3$AcMvPrae
+	temp3$AcMvPost <- if(length(temp3$AcMvPost) == 0)NA else temp3$AcMvPost
+
+	test2[i,] <- c(as.character(temp$Datum), temp$AcquirorDscd, temp$TargetDscd, 
+		temp$ShareAc, temp$SicAc , temp$SicTa ,
+		temp2$TaIcc, temp2$AcIccPrae, temp2$AcIccPost,
+		temp3$TaMv, temp3$AcMvPrae, temp3$AcMvPost)	
+	}
+	names(test2)<-c(names(SDCCol$get()),names(temp2),names(temp3))
+	test2
+	}
+system.time(testob<-testG(SDCTab3,SDCset3,ICCTab3,ICCset3,COMPTab3,COMPset3,EventWset3))
+
+
+naClear <- function(SumTab){
+		temp <- (SumTab[,c("TaIcc", "AcIccPrae", "AcIccPost", 
+			            "TaMv", "AcMvPrae", "AcMvPost")])
+			temp <- apply(is.na(temp)|temp=="NaN",1,any)
+		
+		SumTab[!temp,]
+		}
+removeInd <- function(SumTab,SIC = 7,TargetSIC = "SicAcCol", AcquirorSIC = "SicTaCol"){
+		temp <- SumTab[,c(TargetSIC,AcquirorSIC)]
+			temp <- apply(temp,2,function(x)substr(x,1,1))
+			temp <- apply(temp,1,function(x)any(x==SIC))
+		
+		SumTab[!temp,]
+		}
+
+
+
+ICCDiff <- function(SummarySdc, TaIccCol = "TaIcc", AcIccPraeCol = "AcIccPrae",
+		AcIccPostCol = "AcIccPost", TaMvCol = "TaMv", AcMvPraeCol =  "AcMvPrae",
+		AcMvPostCol = "AcMvPost")
+			{
+			temp <- c(TaIccCol, AcIccPraeCol, AcIccPostCol,
+				     TaMvCol, AcMvPraeCol, AcMvPostCol)
+			SummarySdc[,temp] <- apply(SummarySdc[,temp],2,as.numeric)
+			temp <- SummarySdc[,TaIccCol] * SummarySdc[,TaMvCol]
+			temp <- temp + (SummarySdc[,AcIccPraeCol] * SummarySdc[,AcMvPraeCol])
+			temp <- temp/(SummarySdc[,TaMvCol] + SummarySdc[,AcMvPraeCol])
+
+			SummarySdcCalc <- cbind(SummarySdc, "weightedIcc" = temp)
+			
+			temp <- SummarySdc[,AcIccPostCol] - temp
+			SummarySdcCalc <- cbind(SummarySdcCalc, "diffIcc" = temp) 
+			}
+
+
+
+SICSeparation <- function(SummarySdc, AcSicCol = "SicAcCol", TaSicCol = "SicTaCol")
+			{	
+			##SummarySdc$TaIcc <- as.numeric(SummarySdc$TaIcc)
+			##SummarySdc$AcIccPrae <- as.numeric(SummarySdc$AcIccPrae)
+			##SummarySdc$AcIccPost <- as.numeric(SummarySdc$AcIccPost)
+
+			Sic0 <- SummarySdc[, AcSicCol] == SummarySdc[, TaSicCol]
+			Sic1 <- substr(SummarySdc[, AcSicCol],1,1) != substr(SummarySdc[, TaSicCol],1,1)
+			temp <- (Sic1 | Sic0)
+			Sic2 <- substr(SummarySdc[, AcSicCol],2,2) != substr(SummarySdc[, TaSicCol],2,2)
+			Sic2 <- Sic2==T & temp==F 
+			temp <- temp | Sic2
+			Sic3 <- substr(SummarySdc[, AcSicCol],3,3) != substr(SummarySdc[, TaSicCol],3,3)
+			Sic3 <- Sic3==T & temp==F
+			temp <- temp | Sic3
+			Sic4 <- substr(SummarySdc[, AcSicCol],4,4) != substr(SummarySdc[, TaSicCol],4,4)
+			Sic4 <- Sic4==T & temp==F
+
+			list("firstDigit" = SummarySdc[Sic1,], "secDigit" = SummarySdc[Sic2,], 
+			"thirdDigit" = SummarySdc[Sic3,], "fourthDigit" = SummarySdc[Sic4,], 
+			"sameSic" = SummarySdc[Sic0,])
+			}
+
+Summarylist	<- function(SicSeperation)
+			{
+			temp <- SicSeperation$firstDigit[,c("TaIcc","AcIccPrae","AcIccPost",
+									"weightedIcc","diffIcc")]
+				print("firstDigit")
+				temp2<-nrow(temp)	
+				print(temp2)
+				print(summary(temp))
+			temp <- SicSeperation$secDigit[,c("TaIcc","AcIccPrae","AcIccPost",
+									"weightedIcc","diffIcc")]
+				print("secDigit")
+				temp2<-nrow(temp)	
+				print(temp2)
+				print(summary(temp))
+			temp <- SicSeperation$thirdDigit[,c("TaIcc","AcIccPrae","AcIccPost",
+									"weightedIcc","diffIcc")]
+				print("thirdDigit")
+				temp2<-nrow(temp)	
+				print(temp2)
+				print(summary(temp))
+			temp <- SicSeperation$fourthDigit[,c("TaIcc","AcIccPrae","AcIccPost",
+									"weightedIcc","diffIcc")]
+				print("fourthDigit")
+				temp2<-nrow(temp)	
+				print(temp2)
+				print(summary(temp))
+			temp <- SicSeperation$sameSic[,c("TaIcc","AcIccPrae","AcIccPost",
+									"weightedIcc","diffIcc")]
+				print("sameSic")
+				temp2<-nrow(temp)	
+				print(temp2)
+				print(summary(temp))
+			}
+
 
 ## ****************************************************************************
 
@@ -386,84 +508,16 @@ makeList <- function(SdcCol = SDCCol , IccCol = ICCCol, CompCol = COMPCol,
 			}		
 
 
-ICCDiff <- function(SummarySdc, TaIccCol = TaIcc, AcIccPraeCol = AcIccPrae,
-		AcIccPostCol = AcIccPost, TaMvCol = TaMv, AcMvPraeCol =  AcMvPrae
-		AcMvPostCol = AcMvPost)
-			{
-			temp <- SummarySdc$TaIccCol * SummarySdc$TaMvCol
-			temp <- temp + (SummarySdc$AcIccPraeCol * SummarySdc$AcMvPraeCol)
-			temp <- temp/(SummarySdc$TaMvCol + SummarySdc$AcMvPraeCol)
-
-			SummarySdcCalc <- cbind(SummarySdc, "weightedIcc" = temp)
-			
-			temp <- SummarySdc$AcIccPostCol - temp
-			SummarySdcCalc <- cbind(SummarySdcCalc, "diffIcc" = temp) 
-			}
-
-
-
-SICSeparation <- function(SummarySdc, AcSicCol, TaSicCol)
-			{	
-			SummarySdc$TaIcc <- as.numeric(SummarySdc$TaIcc)
-			SummarySdc$AcIccPrae <- as.numeric(SummarySdc$AcIccPrae)
-			SummarySdc$AcIccPost <- as.numeric(SummarySdc$AcIccPost)
-
-			Sic0 <- SummarySdc[, AcSicCol] == SummarySdc[, TaSicCol]
-			Sic1 <- substr(SummarySdc[, AcSicCol],1,1) != substr(SummarySdc[, TaSicCol],1,1)
-			temp <- (Sic1 | Sic0)
-			Sic2 <- substr(SummarySdc[, AcSicCol],2,2) != substr(SummarySdc[, TaSicCol],2,2)
-			Sic2 <- Sic2==T & temp==F 
-			temp <- temp | Sic2
-			Sic3 <- substr(SummarySdc[, AcSicCol],3,3) != substr(SummarySdc[, TaSicCol],3,3)
-			Sic3 <- Sic3==T & temp==F
-			temp <- temp | Sic3
-			Sic4 <- substr(SummarySdc[, AcSicCol],4,4) != substr(SummarySdc[, TaSicCol],4,4)
-			Sic4 <- Sic4==T & temp==F
-
-			list("firstDigit" = SummarySdc[Sic1,], "secDigit" = SummarySdc[Sic2,], 
-			"thirdDigit" = SummarySdc[Sic3,], "fourthDigit" = SummarySdc[Sic4,], 
-			"sameSic" = SummarySdc[Sic0,])
-			} 
-
-Summarylist	<- function(SicSeperation)
-			{
-			temp <- SicSeperation$firstDigit[,c("TaIcc","AcIccPrae","AcIccPost")]
-				print("firstDigit")
-				temp2<-nrow(temp)	
-				print(temp2)
-				print(summary(temp))
-			temp <- SicSeperation$secDigit[,c("TaIcc","AcIccPrae","AcIccPost")]
-				print("secDigit")
-				temp2<-nrow(temp)	
-				print(temp2)
-				print(summary(temp))
-			temp <- SicSeperation$thirdDigit[,c("TaIcc","AcIccPrae","AcIccPost")]
-				print("thirdDigit")
-				temp2<-nrow(temp)	
-				print(temp2)
-				print(summary(temp))
-			temp <- SicSeperation$fourthDigit[,c("TaIcc","AcIccPrae","AcIccPost")]
-				print("fourthDigit")
-				temp2<-nrow(temp)	
-				print(temp2)
-				print(summary(temp))
-			temp <- SicSeperation$sameSic[,c("TaIcc","AcIccPrae","AcIccPost")]
-				print("sameSic")
-				temp2<-nrow(temp)	
-				print(temp2)
-				print(summary(temp))
-			}
-
-
 lapply(x, runif, min = 0, max = 10)
 lapply(SICSaperation, mean)
 sapply(SICSaperation, function(x)mean(x$diffIcc))
 	
 testF <- function(SDCTab,SDCCol,COMPTab,COMPCol,eventW){
-	laenge <- 1800
+	laenge <- 20
 	test2 <- as.data.frame(matrix(rep(NA,9*laenge),nrow=laenge,ncol=9))
-	##CharacAdd(COMPTab,COMPCol)
-	##print(COMPCol1)
+	CharacAdd(COMPTab,COMPCol)
+	##a<-str(COMPCol$get())
+	##print(a)
 	for (i in 1:laenge){ 
 	temp <- SDCget(SDCCol,SDCTab,i,eventW)
 	temp2 <- COMPget(COMPCol, COMPTab, temp)
@@ -482,32 +536,12 @@ testF <- function(SDCTab,SDCCol,COMPTab,COMPCol,eventW){
 test1<-testF(SDCTab3,SDCset3,COMPTab3,COMPset3,EventWset3)
 
 
-testG <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,eventW){
-	laenge <- 1800
-	test2 <- as.data.frame(matrix(rep(NA,12*laenge),nrow=laenge,ncol=12))
-	for (i in 1:laenge){ 
-	temp  <- SDCget(SDCCol,SDCTab,i,eventW)
-	temp2 <- ICCget(ICCCol,ICCTab,temp)
-	temp3 <- COMPget(COMPCol,COMPTab,temp)
-	
-	##temp2$TaIcc <- if(length(temp2$TaIcc) == 0)NA else temp2$TaIcc
-	##temp2$AcIccPrae <- if(length(temp2$AcIccPrae) == 0)NA else temp2$AcIccPrae
-	##temp2$AcIccPost <- if(length(temp2$AcIccPost) == 0)NA else temp2$AcIccPost
-	
-	temp3$TaMv <- if(length(temp3$TaMv) == 0)NA else temp3$TaMv
-	temp3$AcMvPrae <- if(length(temp3$AcMvPrae) == 0)NA else temp3$AcMvPrae
-	temp3$AcMvPost <- if(length(temp3$AcMvPost) == 0)NA else temp3$AcMvPost
 
-	test2[i,] <- c(as.character(temp$Datum), temp$AcquirorDscd, temp$TargetDscd, 
-		temp$ShareAc, temp$SicAc , temp$SicTa ,
-		temp2$TaIcc, temp2$AcIccPrae, temp2$AcIccPost,
-		temp3$TaMv, temp3$AcMvPrae, temp3$AcMvPost)	
-	}
-	names(test2)<-c(names(SDCCol$get()),names(temp2),names(temp3))
-	test2
-	}
-system.time(testob<-testG(SDCTab3,SDCset3,ICCTab3,ICCset3,COMPTab3,COMPset3,EventWset3))
+temp1 <- SDCget(SDCset3, SDCTab3, 1, EventWset3)
+temp2 <- ICCget(ICCset3, ICCTab3, temp1)
+temp3 <- COMPget(COMPset3, COMPTab3, temp1)
 
+##sum(substr(testob[,"SicAcCol"],1,1)==7|substr(testob[,"SicTaCol"],1,1)==7)
 
 if((length(a)==0|length(a)==0|length(c)==0)|(any(is.na(c(a,b,c))))
 		{ (list(TaIcc = NA, AcIccPrae = NA, AcIccPost = NA))}
