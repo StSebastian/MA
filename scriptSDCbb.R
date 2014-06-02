@@ -1,10 +1,19 @@
-SDCset <- function(DatCol, AcCol, TaCol, ShareCol, SicAcCol, SicTaCol)
-{	get <- function()	data.frame(DatCol, AcCol, TaCol, ShareCol, 
+
+## *************setting table columns and event window**************
+
+## functions: SDCset, ICCset, COMPset, EventWset 
+
+## SDCset --> selecting M&A Date column, Acquiror (DSCD) column, Target (DSCD) Column
+##         	 	      Percentage of Shares Acquired column, 
+##			      SIC Code Acquiror column, SIC Code Target column
+## names/headlines of the corrsponding colums should be given as arguments
+## of type char to the function when called   			   
+
+SDCset <- function(DatCol, AcCol, TaCol, ShareCol, SicAcCol, SicTaCol){    
+	
+	get <- function()data.frame(DatCol, AcCol, TaCol, ShareCol, 
 				SicAcCol, SicTaCol, stringsAsFactors = F)
 
-##	function() 	namecolAc
-##	function()	namecolTa
-	
 	setDat   <-  function(DAT) DatCol <<- DAT
 	setAc    <-  function(AC)  AcCol <<- AC 	
 	setTa    <-  function(TA)  TaCol <<- TA
@@ -16,13 +25,16 @@ SDCset <- function(DatCol, AcCol, TaCol, ShareCol, SicAcCol, SicTaCol)
 			setAc = setAc, setTa = setTa, 
 			setShare = setShare, setSicAc = setSicAc,
 			setSicTa = setSicTa)
-	##list(get = get, setDat = setDat, 
-	##	setAc = setAc, setTa = setTa)
+
 	SDCCol
-}
+	}
 
-def <- SDCset("SP1","SP4","SP8")
 
+
+## ICCset --> selecting column of ICC Date, Company's DSCD
+##         	 	      column of ICC
+## names/headlines of the corrsponding colums should be given as arguments
+## of type char to the function when called  
 
 ICCset <- function(DatCol, DscdCol, IccCol){
 	
@@ -35,45 +47,69 @@ ICCset <- function(DatCol, DscdCol, IccCol){
 	
 	ICCCol <<- list(get = get,setDat = setDat, 
 			setDscd = setDscd, setIcc = setIcc)
-	##list(get = get,setDat = setDat, 
-	##	setDscd = setDscd, setIcc = setIcc)
 	
 	ICCCol
-	##noch vll ein dummy argument hinzufügen um von SDCget abzugrenzen
-}
+	}
 
 
-COMPset <- function(DscdCol, FactorCol, SicCol)
+
+## COMPset --> selecting Company's (DSCD) column, column of respective 
+##         	 	       Company's Characteristics, Company's SIC Code column
+## names/headlines of the corrsponding colums should be given as arguments
+## of type char to the function when called 
+
+COMPset <- function(DscdCol, CharacCol, SicCol)
 	{	
-	FactorList <- NULL
-	get <- function()	list(DscdCol = DscdCol, FactorCol =FactorCol, 
-					SicCol = SicCol, FactorList = FactorList)
+	CharacList <- NULL
+	get <- function()	list(DscdCol = DscdCol, CharacCol = CharacCol, 
+					SicCol = SicCol, CharacList = CharacList)
 	setDscd <- function(DSCD) DscdCol <<- DSCD
 	setSic  <- function(SIC) SicCol <<- SIC	
-	setFactor <- function(FactorC) FactorCol <<- FactorC
-	setFactorList <- function(Factor) FactorList <<- Factor 
+	setCharac <- function(CharacC) CharacCol <<- CharacC
+	setCharacList <- function(Charac) CharacList <<- Charac 
 	
 	COMPCol <<- list(get = get, setDscd = setDscd, 
-			setFactor = setFactor, setSic = setSic,
-			setFactorList = setFactorList)
+			setCharac = setCharac, setSic = setSic,
+			setCharacList = setCharacList)
 	
 	COMPCol
 }
 
-FactorAdd <- function(COMPTable, COMPCol)
-	{ 
-		FactorCol <- COMPCol$get()$FactorCol
-		FactorCol <- COMPTable[,FactorCol]
-		FactorCol <- as.factor(FactorCol)		
 
-		Factors <- levels(FactorCol)
-		FactorMat <- sapply(1:length(Factors),function(x){Factors[x]==FactorCol })
-		colnames(FactorMat) <- Factors
-		FactorMat <- as.data.frame(FactorMat)
-		##COMPCol[[length(COMPCol)+1]] <- FactorMat
-		COMPCol$setFactorList(FactorMat)
-		COMPCol$get()	
+
+## EventWset --> selecting period before and after M&A date which will be used 
+## 		     for ICC prae and post M&A computation as well as Company's 
+##               characteristics		 
+## Five numeric arguments are given to the function. First two determine the computation 
+## period prior to the M&A. Therefore number of month from M&A date to the first month 
+## and the last month of the period are entered as negative values to the function.
+## Same procedure applies for the following two arguments, they determine the computation
+## period after the M&A. 
+## The fifth argument is a the number of valid information,
+## which need to exist in each of the period. If there exists to many missing values, 
+## the corresponding M&A will be excluded from further computations.    
+
+EventWset <- function(PraeStart, PraeLast, PostStart, PostLast, MinObs)
+	{	
+	list(PraeStart = PraeStart, PraeLast = PraeLast, 
+		PostStart = PostStart, PostLast = PostLast,
+		MinObs = MinObs)
 	}
+
+SDCset3 <- SDCset("SpDate", "SpAcDscd", "SpTaDscd", "SpShAcq", "SpAcSic", "SpTaSic") 
+ICCset3 <- ICCset("Datum", "Company_Code", "ICC_CT")
+COMPset3 <- COMPset("DSCD", "KPI", "WC07021")
+EventWset3 <- EventWset(-19, -2, 2, 19, 4)
+
+
+## *************modifying COMPTable**************
+
+## NameCompCol --> convertes the tables column names to a required standard. Which will be
+## 			 "yyyy-mm" for all columns which refer to particular Date.	
+## First argument is the stored table with the time series' of the company's characteristics, 
+## the seccond argument the number of columns prior to the first time column and the third
+## the starting date of the time series in the format "yyyy-mm-dd" (only year and month are
+## truly relevant).
 
 NameCompCol <- function(COMPTable, NChar, StartDate)
 	{
@@ -85,14 +121,101 @@ NameCompCol <- function(COMPTable, NChar, StartDate)
 	names(COMPTable) <- c(names(COMPTable[,1:NChar]),temp)
 	COMPTable
 	}
-		
-EventWset <- function(PraeStart, PraeLast, PostStart, PostLast, MinObs)
-	{	
-	list(PraeStart = PraeStart, PraeLast = PraeLast, 
-		PostStart = PostStart, PostLast = PostLast,
-		MinObs = MinObs)
+
+CompTab3 <- NameCompCol(CompTab3,5,"1978-01-01")
+
+## CharacAdd --> creates an object given to another object created by the function COMPset().
+##		     It will be stored in the variable "CharacList" of this object and gives 
+##		     information in which rows of the company's characteristics table 
+##		     each characteristic can be found. The object decrease computation time of
+##		     other functions.
+## Arguments are the company's characteristics table and the object created by the COMPset()
+## function. 	
+
+
+CharacAdd <- function(COMPTable, COMPCol)
+	{ 
+		CharacCol <- COMPCol$get()$CharacCol
+		CharacCol <- COMPTable[,CharacCol]
+		CharacCol <- as.factor(CharacCol)		
+
+		Characs <- levels(CharacCol)
+		CharacMat <- sapply(1:length(Characs),function(x){Characs[x] == CharacCol })
+		colnames(CharacMat) <- Characs
+		CharacMat <- as.data.frame(CharacMat)
+		##COMPCol[[length(COMPCol)+1]] <- CharacMat
+		COMPCol$setCharacList(CharacMat)
+		COMPCol$get()	
 	}
 
+
+
+## ExtendFun --> Adds further empty columns to the company's characteristics table to account for
+##               possible post M&A periods reaching beyond the last date of the time series.
+## First argument is company's characteristics table, seccond the numer of colums to be added
+
+ExtendFun <- function(COMPTab,nRow) 
+		{tempi <- COMPTab
+		time <- as.Date("2014-01-01")
+		time <- as.POSIXlt(time)	
+		temp <- rep(NA,nrow(COMPTab))
+			for(i in 1:nRow){
+			count <- time
+			count$mon <- time$mon+i
+			namen<-substr(as.Date(count),1,7)
+			zwi<-names(tempi)
+			tempi <- cbind(tempi,temp)
+			names(tempi)<-c(zwi,namen)
+			}
+		tempi
+		}
+
+COMPset3 <- CharacAdd(COMPTab3, COMPset3)
+COMPTab3 <- ExtendFun(COMPTab3,24)		
+
+
+## *************functions repeated for every M&A**************
+
+
+## SDCget --> take the object storing the SDC columns, the SDC Table, 
+##		  the row of the SDC Table (Selection of particular M&A) and 
+##		  the object storing the Event Window details as argument. 
+##		  In return it stores the SDC details SDC date, SDC prae and 
+##		  post Event Window period, Acquiror and Target DSCD, the percentage 
+##		  of shares acquired and the SIC Code of the Acquiror and the Target company   
+
+SDCget <- function(SdcCol = SDCCol, SDCTable, SDCRow, EVENTWset){
+	
+	DatCol 	<- SdcCol$get()$DatCol	
+	AcquirorCol <- SdcCol$get()$AcCol
+	TargetCol   <- SdcCol$get()$TaCol
+	ShareAcCol  <- SdcCol$get()$ShareCol
+	SicAcqCol	<- SdcCol$get()$SicAcCol
+	SicTarCol   <- SdcCol$get()$SicTaCol
+	
+	Datum     <- SDCTable[SDCRow,DatCol]
+	
+	MuaDat      <- EventWget(Datum, EVENTWset) ## function will be explained next
+
+	AcquirorDscd <- SDCTable[SDCRow,AcquirorCol]
+	TargetDscd   <- SDCTable[SDCRow,TargetCol]
+	ShareAc      <- SDCTable[SDCRow,ShareAcCol]
+	SicAc		 <- SDCTable[SDCRow,SicAcqCol]	
+	SicTa		 <- SDCTable[SDCRow,SicTarCol]	
+	
+	list( Datum = Datum, MuaDat = MuaDat, 
+		AcquirorDscd = AcquirorDscd, TargetDscd = TargetDscd, 
+		ShareAc = ShareAc, SicAc = SicAc, SicTa = SicTa)
+	}
+
+
+
+## EventWget --> takes particular SDC Date as argument and the object storing
+##               the details for prae and post M&A Event Window periods. 
+##		     It returns a list with two vectors and one number. The vectors 
+##  		     store all the dates in the prae and post M&A Event Window periods,
+## 		     whereas the number just states the minimum non missig values for each
+##		     earlier defined in the EventWset() functions.
 
 EventWget <- function(Datum, EventW)
 	{
@@ -111,39 +234,23 @@ EventWget <- function(Datum, EventW)
 	}
 
 
-SDCget <- function(SdcCol = SDCCol, SDCTable, SDCRow, EVENTWset)
-	{
-	DatCol 	<- SdcCol$get()$DatCol ## "$DatCol" kommt von SDC get() data.frame	
-	AcquirorCol <- SdcCol$get()$AcCol
-	TargetCol   <- SdcCol$get()$TaCol
-	ShareAcCol  <- SdcCol$get()$ShareCol
-	SicAcqCol	<- SdcCol$get()$SicAcCol
-	SicTarCol   <- SdcCol$get()$SicTaCol
-	
-	Datum     <- SDCTable[SDCRow,DatCol]
-	
-	MuaDat      <- EventWget(Datum, EVENTWset)
-
-	AcquirorDscd <- SDCTable[SDCRow,AcquirorCol]
-	TargetDscd   <- SDCTable[SDCRow,TargetCol]
-	ShareAc      <- SDCTable[SDCRow,ShareAcCol]
-	SicAc		 <- SDCTable[SDCRow,SicAcqCol]	
-	SicTa		 <- SDCTable[SDCRow,SicTarCol]	
-	
-	list( Datum = Datum, MuaDat = MuaDat, 
-		AcquirorDscd = AcquirorDscd, TargetDscd = TargetDscd, 
-		ShareAc = ShareAc, SicAc = SicAc, SicTa = SicTa)
-}
-
+## ICCget --> takes the object storing the ICC Columns, the ICC table and
+##		  the SDC object created by the SDCget() function and unique to
+##		  each M&A.
+##		  It gives the mean ICCs for the Acquiror and Target for the period
+##		  prior to the M&A back and the mean ICC for the Acquiror after the
+##            M&A. 
 
 ICCget <- function(IccCol = ICCCol, ICCTable, SDCget){
-	DatCol  <- IccCol$get()$DatCol ## "$DatCol" kommt von ICC get() data.frame
+	
+	DatCol  <- IccCol$get()$DatCol
 	DscdCol <- IccCol$get()$DscdCol
 	IccCol  <- IccCol$get()$IccCol
 	DatPrae <- SDCget$MuaDat$DatPrae
 	DatPost <- SDCget$MuaDat$DatPost
 	MinObs  <- SDCget$MuaDat$MinObs
 	ICCTab  <- ICCTable[,c(DatCol,DscdCol,IccCol)]
+	
 	Abbruch <- list(TaIcc = NA, AcIccPrae = NA, AcIccPost = NA)
 	if(is.na(SDCget$TargetDscd)|is.na(SDCget$AcquirorDscd))
 	{return (Abbruch)}
@@ -185,18 +292,22 @@ ICCget <- function(IccCol = ICCCol, ICCTable, SDCget){
 }
 
 
+
+## COMPget --> does the same as function ICC get but with the table and returns the mean MV
+##		   instead of the mean ICC.	
+
 COMPget <- function(CompCol = COMPCol, CompTable, SDCget)
 		{
-		FactorCol <- CompCol$get()$FactorList
-		FactorCol <- FactorCol$MV
-		DscdCol <- CompCol$get()$DscdCol
+		CharacCol <- CompCol$CharacList
+		CharacCol <- CharacCol$MV
+		DscdCol <- CompCol$DscdCol
 		##MvCol
 		##SicCol  <- CompCol$get()$SicCol	
 		DatPrae <- SDCget$MuaDat$DatPrae
 		DatPost <- SDCget$MuaDat$DatPost
 		
-		CompTablePrae <- CompTable[FactorCol ,c(DscdCol, DatPrae)]
-		CompTablePost <- CompTable[FactorCol ,c(DscdCol, DatPost)]
+		CompTablePrae <- CompTable[CharacCol ,c(DscdCol, DatPrae)]
+		CompTablePost <- CompTable[CharacCol ,c(DscdCol, DatPost)]
 		
 		temp <- CompTablePrae[,DscdCol] == SDCget$TargetDscd
 		CompRowTa <- CompTablePrae[temp,DatPrae]	
@@ -212,6 +323,12 @@ COMPget <- function(CompCol = COMPCol, CompTable, SDCget)
 		list(TaMv = TaMv, AcMvPrae = AcMvPrae, AcMvPost = AcMvPost)
 		##TaSic = TaSic, AcSic = AcSic)
 	}	
+
+temp1 <- SDCget(SDCset3, SDCTab3, 1, EventWset3)
+temp2 <- ICCget(ICCset3, ICCTab3, temp1)
+temp3 <- COMPget(COMPset3, COMPTab3, temp1)
+
+## ****************************************************************************
 
 
 MUAset <- function(SDCRow, SdcCol = SDCCol , IccCol = ICCCol, 
@@ -345,14 +462,16 @@ sapply(SICSaperation, function(x)mean(x$diffIcc))
 testF <- function(SDCTab,SDCCol,COMPTab,COMPCol,eventW){
 	laenge <- 1800
 	test2 <- as.data.frame(matrix(rep(NA,9*laenge),nrow=laenge,ncol=9))
-	FactorAdd(COMPTab,COMPCol)
+	##CharacAdd(COMPTab,COMPCol)
 	##print(COMPCol1)
 	for (i in 1:laenge){ 
 	temp <- SDCget(SDCCol,SDCTab,i,eventW)
 	temp2 <- COMPget(COMPCol, COMPTab, temp)
+	
 	temp2$TaMv <- if(length(temp2$TaMv) == 0)NA else temp2$TaMv
 	temp2$AcMvPrae <- if(length(temp2$AcMvPrae) == 0)NA else temp2$AcMvPrae
 	temp2$AcMvPost <- if(length(temp2$AcMvPost) == 0)NA else temp2$AcMvPost
+
 	test2[i,] <- c(as.character(temp$Datum), temp$AcquirorDscd, temp$TargetDscd, 
 			temp$ShareAc, temp$SicAc, temp$SicTa,
 			temp2$TaMv, temp2$AcMvPrae, temp2$AcMvPost)	
@@ -360,10 +479,10 @@ testF <- function(SDCTab,SDCCol,COMPTab,COMPCol,eventW){
 	names(test2)<-c(names(SDCCol$get()),names(temp2))
 	test2
 	}
-test1<-testF(def,SDCset2,tempo2,COMPset3,EventW2)
+test1<-testF(SDCTab3,SDCset3,COMPTab3,COMPset3,EventWset3)
 
 
-testG <- function(SDCTab,ICCTab,COMBTab,SDCCol,ICCCol,COMPCol,ICCTab,eventW){
+testG <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,eventW){
 	laenge <- 1800
 	test2 <- as.data.frame(matrix(rep(NA,12*laenge),nrow=laenge,ncol=12))
 	for (i in 1:laenge){ 
@@ -374,6 +493,10 @@ testG <- function(SDCTab,ICCTab,COMBTab,SDCCol,ICCCol,COMPCol,ICCTab,eventW){
 	##temp2$TaIcc <- if(length(temp2$TaIcc) == 0)NA else temp2$TaIcc
 	##temp2$AcIccPrae <- if(length(temp2$AcIccPrae) == 0)NA else temp2$AcIccPrae
 	##temp2$AcIccPost <- if(length(temp2$AcIccPost) == 0)NA else temp2$AcIccPost
+	
+	temp3$TaMv <- if(length(temp3$TaMv) == 0)NA else temp3$TaMv
+	temp3$AcMvPrae <- if(length(temp3$AcMvPrae) == 0)NA else temp3$AcMvPrae
+	temp3$AcMvPost <- if(length(temp3$AcMvPost) == 0)NA else temp3$AcMvPost
 
 	test2[i,] <- c(as.character(temp$Datum), temp$AcquirorDscd, temp$TargetDscd, 
 		temp$ShareAc, temp$SicAc , temp$SicTa ,
@@ -383,7 +506,7 @@ testG <- function(SDCTab,ICCTab,COMBTab,SDCCol,ICCCol,COMPCol,ICCTab,eventW){
 	names(test2)<-c(names(SDCCol$get()),names(temp2),names(temp3))
 	test2
 	}
-testob<-testG(SDCTab,SDCCol,ICCCol,ICCTab,12)
+system.time(testob<-testG(SDCTab3,SDCset3,ICCTab3,ICCset3,COMPTab3,COMPset3,EventWset3))
 
 
 if((length(a)==0|length(a)==0|length(c)==0)|(any(is.na(c(a,b,c))))
