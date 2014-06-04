@@ -9,7 +9,9 @@
 ## names/headlines of the corrsponding colums should be given as arguments
 ## of type char to the function when called   			   
 
-SDCset <- function(DatCol, AcCol, TaCol, ShareCol, SicAcCol, SicTaCol){    
+SDCset <- function(DatCol = "SpDate", AcCol = "SpAcDscd", TaCol = "SpTaDscd",
+				    	ShareCol = "SpShAcq", SicAcCol = "SpAcSic", 
+					SicTaCol = "SpTaSic"){    
 	
 	get <- function()data.frame(DatCol, AcCol, TaCol, ShareCol, 
 				SicAcCol, SicTaCol, stringsAsFactors = F)
@@ -36,7 +38,8 @@ SDCset <- function(DatCol, AcCol, TaCol, ShareCol, SicAcCol, SicTaCol){
 ## names/headlines of the corrsponding colums should be given as arguments
 ## of type char to the function when called  
 
-ICCset <- function(DatCol, DscdCol, IccCol){
+ICCset <- function(DatCol = "Datum", DscdCol = "Company_Code", 
+					IccCol = "ICC_CT"){
 	
 	get <- function()	data.frame(DatCol, DscdCol , IccCol,
 					stringsAsFactors = F)
@@ -58,11 +61,13 @@ ICCset <- function(DatCol, DscdCol, IccCol){
 ## names/headlines of the corrsponding colums should be given as arguments
 ## of type char to the function when called 
 
-COMPset <- function(DscdCol, CharacCol, SicCol)
-	{	
+COMPset <- function(DscdCol = "DSCD", CharacCol = "KPI",
+					 SicCol = "WC07021"){	
+	
 	CharacList <- NULL
 	get <- function()	list(DscdCol = DscdCol, CharacCol = CharacCol, 
 					SicCol = SicCol, CharacList = CharacList)
+	
 	setDscd <- function(DSCD) DscdCol <<- DSCD
 	setSic  <- function(SIC) SicCol <<- SIC	
 	setCharac <- function(CharacC) CharacCol <<- CharacC
@@ -73,7 +78,7 @@ COMPset <- function(DscdCol, CharacCol, SicCol)
 			setCharacList = setCharacList)
 	
 	COMPCol
-}
+	}
 
 
 
@@ -89,17 +94,27 @@ COMPset <- function(DscdCol, CharacCol, SicCol)
 ## which need to exist in each of the period. If there exists to many missing values, 
 ## the corresponding M&A will be excluded from further computations.    
 
-EventWset <- function(PraeStart, PraeLast, PostStart, PostLast, MinObs)
+EventWset <- function(PraeStart = -18, PraeLast = -3, PostStart = 3, PostLast = 18, 
+				MinObs = 3)
 	{	
-	list(PraeStart = PraeStart, PraeLast = PraeLast, 
-		PostStart = PostStart, PostLast = PostLast,
-		MinObs = MinObs)
+	EventWdata <<- list(PraeStart = PraeStart, PraeLast = PraeLast, 
+			   PostStart = PostStart, PostLast = PostLast,
+		 	   MinObs = MinObs)
 	}
 
-SDCset3 <- SDCset("SpDate", "SpAcDscd", "SpTaDscd", "SpShAcq", "SpAcSic", "SpTaSic") 
-ICCset3 <- ICCset("Datum", "Company_Code", "ICC_CT")
-COMPset3 <- COMPset("DSCD", "KPI", "WC07021")
-EventWset3 <- EventWset(-19, -2, 2, 19, 4)
+SetCol <- function(){
+		SDCset()
+		ICCset()
+		COMPset()
+		EventWset()
+		}
+
+SetCol()
+
+##SDCset3 <- SDCset("SpDate", "SpAcDscd", "SpTaDscd", "SpShAcq", "SpAcSic", "SpTaSic") 
+##ICCset3 <- ICCset("Datum", "Company_Code", "ICC_CT")
+##COMPset3 <- COMPset("DSCD", "KPI", "WC07021")
+##EventWset3 <- EventWset(-19, -2, 2, 19, 4)
 
 
 ## *************modifying COMPTable**************
@@ -111,7 +126,7 @@ EventWset3 <- EventWset(-19, -2, 2, 19, 4)
 ## the starting date of the time series in the format "yyyy-mm-dd" (only year and month are
 ## truly relevant).
 
-NameCompCol <- function(COMPTable, NChar, StartDate)
+NameCompCol <- function(COMPTable = COMPTab, NChar = 5 , StartDate = "1978-01-01")
 	{
 	StartDate <- as.POSIXlt( StartDate)
 	number <- ncol(COMPTable) - NChar
@@ -122,7 +137,7 @@ NameCompCol <- function(COMPTable, NChar, StartDate)
 	COMPTable
 	}
 
-CompTab3 <- NameCompCol(CompTab3,5,"1978-01-01")
+CompTab3 <- NameCompCol(CompTab3)
 
 ## CharacAdd --> creates an object given to another object created by the function COMPset().
 ##		     It will be stored in the variable "CharacList" of this object and gives 
@@ -155,24 +170,21 @@ CharacAdd <- function(COMPTable, COMPCol)
 ##               possible post M&A periods reaching beyond the last date of the time series.
 ## First argument is company's characteristics table, seccond the numer of colums to be added
 
-ExtendFun <- function(COMPTab){
+ExtendFun <- function(COMPTab = CompTab){
 		time <- as.Date("2014-01-01")
-		time <- as.POSIXlt(time1)	
+		time <- as.POSIXlt(time)	
 		newRow <- rep(NA,nrow(COMPTab))
 		newFrame <- sapply(1:24,function(x){newRow})
-		getDate <- function(x){
-			time$mon <- time$mon+x
-			substr(as.Date(time),1,7)
-			}
-		colDates <- getDate(1:24)	
-		colnames(newFrame)<-colDates
+		time$mon <- time$mon+1:24
+		time<-substr(as.Date(time),1,7)
+		colnames(newFrame)<-time
 		newFrame
 		COMPTab <- cbind(COMPTab,newFrame)
 		}
 
 
 COMPset3 <- CharacAdd(COMPTab3, COMPset3)
-COMPTab3 <- ExtendFun(COMPTab3,24)		
+COMPTab3 <- ExtendFun(COMPTab3)		
 
 
 ## *************functions repeated for every M&A**************
@@ -320,7 +332,7 @@ COMPget <- function(CompCol = COMPCol, CompTable, SDCget)
 
 
 SumTab <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,eventW){
-	laenge <- 300
+	laenge <- 180
 	test2 <- as.data.frame(matrix(rep(NA,13*laenge),nrow=laenge,ncol=13))
 	CharacAdd(COMPTab,COMPCol)
 	for (i in 1:laenge){ 
@@ -337,8 +349,6 @@ SumTab <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,eventW){
 	test2$SicSep <- SICSeparation(test2)
 	test2
 	}
-
-system.time(testob<-SumTab(SDCTab3,SDCset3,ICCTab3,ICCset3,COMPTab3,COMPset3,EventWset3))
 
 
 SICSeparation <- function(SummarySdc, AcSicCol = "SicAcCol", TaSicCol = "SicTaCol")
@@ -361,13 +371,15 @@ SICSeparation <- function(SummarySdc, AcSicCol = "SicAcCol", TaSicCol = "SicTaCo
 			SicCol[Sic2] <- "secDigit"
 			SicCol[Sic3] <- "thirdDigit"
 			SicCol[Sic4] <- "fourthDigit"
+			SicCol <- factor(SicCol,order=T,levels=c("sameSic","fourthDigit","thirdDigit","secDigit","firstDigit"))
 			SicCol
 			}
 
+system.time(testob<-SumTab(SDCTab3,SDCset3,ICCTab3,ICCset3,COMPTab3,COMPset3,EventWset3))
 
-testob1<-naClear(testob)
- testob1<-removeInd(testob1)
-testob1<-ICCDiff(testob1)
+system.time(testob<-SumTab(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWdata))
+
+
 
 adjIccCalc <- function(SumTab,NaRe = T, SicRe = T , SIC = 7, TargetSIC = "SicAcCol", AcquirorSIC = "SicTaCol",
 		TaIccCol = "TaIcc", AcIccPraeCol = "AcIccPrae", AcIccPostCol = "AcIccPost", 
@@ -421,43 +433,15 @@ ICCDiff <- function(SummarySdc, TaIccCol = "TaIcc", AcIccPraeCol = "AcIccPrae",
 			SummarySdcCalc <- cbind(SummarySdcCalc, "diffIcc" = temp) 
 			}
 
+##*****************************************************************************
 
-Summarylist	<- function(SicSeperation)
-			{
-			temp <- SicSeperation$firstDigit[,c("TaIcc","AcIccPrae","AcIccPost",
-									"weightedIcc","diffIcc")]
-				print("firstDigit")
-				temp2<-nrow(temp)	
-				print(temp2)
-				print(summary(temp))
-			temp <- SicSeperation$secDigit[,c("TaIcc","AcIccPrae","AcIccPost",
-									"weightedIcc","diffIcc")]
-				print("secDigit")
-				temp2<-nrow(temp)	
-				print(temp2)
-				print(summary(temp))
-			temp <- SicSeperation$thirdDigit[,c("TaIcc","AcIccPrae","AcIccPost",
-									"weightedIcc","diffIcc")]
-				print("thirdDigit")
-				temp2<-nrow(temp)	
-				print(temp2)
-				print(summary(temp))
-			temp <- SicSeperation$fourthDigit[,c("TaIcc","AcIccPrae","AcIccPost",
-									"weightedIcc","diffIcc")]
-				print("fourthDigit")
-				temp2<-nrow(temp)	
-				print(temp2)
-				print(summary(temp))
-			temp <- SicSeperation$sameSic[,c("TaIcc","AcIccPrae","AcIccPost",
-									"weightedIcc","diffIcc")]
-				print("sameSic")
-				temp2<-nrow(temp)	
-				print(temp2)
-				print(summary(temp))
-			}
+testob<-adjIccCalc(testob)
+testob[,"SicSep"] <- factor(testob1[,"SicSep"],order=F)
+testobaov <- aov(diffIcc ~ SicSep,data=testob)
+summary(testobaov)
+summary.lm(testobaov)
 
-
-## ****************************************************************************
+##*****************************************************************************
 
 
 MUAset <- function(SDCRow, SdcCol = SDCCol , IccCol = ICCCol, 
@@ -552,3 +536,8 @@ temp3 <- COMPget(COMPset3, COMPTab3, temp1)
 
 if((length(a)==0|length(a)==0|length(c)==0)|(any(is.na(c(a,b,c))))
 		{ (list(TaIcc = NA, AcIccPrae = NA, AcIccPost = NA))}
+
+tapply(testob1$diffIcc, testob1$SicSep, mean) 
+tapply(testob1$diffIcc, testob1$SicSep, median) 
+tapply(testob1$diffIcc, testob1$SicSep, sd) 
+tapply(testob1$diffIcc, testob1$SicSep, summary)
