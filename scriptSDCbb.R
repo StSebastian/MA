@@ -126,8 +126,8 @@ SetCol()
 ## the starting date of the time series in the format "yyyy-mm-dd" (only year and month are
 ## truly relevant).
 
-NameCompCol <- function(COMPTable = COMPTab, NChar = 5 , StartDate = "1978-01-01")
-	{
+NameCompCol <- function(COMPTable = COMPTab, NChar = 5 , StartDate = "1978-01-01"){
+
 	StartDate <- as.POSIXlt( StartDate)
 	number <- ncol(COMPTable) - NChar
 	temp <- rep(StartDate,number)
@@ -170,16 +170,16 @@ CharacAdd <- function(COMPTable, COMPCol)
 ##               possible post M&A periods reaching beyond the last date of the time series.
 ## First argument is company's characteristics table, seccond the numer of colums to be added
 
-ExtendFun <- function(COMPTab = CompTab){
+ExtendFun <- function(COMPTable = COMPTab){
 		time <- as.Date("2014-01-01")
 		time <- as.POSIXlt(time)	
-		newRow <- rep(NA,nrow(COMPTab))
+		newRow <- rep(NA,nrow(COMPTable))
 		newFrame <- sapply(1:24,function(x){newRow})
 		time$mon <- time$mon+1:24
 		time<-substr(as.Date(time),1,7)
 		colnames(newFrame)<-time
 		newFrame
-		COMPTab <- cbind(COMPTab,newFrame)
+		COMPTable <- cbind(COMPTable,newFrame)
 		}
 
 
@@ -280,7 +280,7 @@ ICCget <- function(IccCol = ICCCol, ICCTable, SDCget){
 		tempAC  <- ICCTab[temp, c(DatCol,IccCol)]
 		tempDat <- is.element(substr(tempAC[,DatCol],1,7),DatPrae)
 		AcIccPrae <- tempAC[tempDat, IccCol]
-		AcIccPrae <- AcIccPrae[!is.na(TaIcc)]	## müsste AcIccPrae anstelle TaIcc sein
+		AcIccPrae <- AcIccPrae[!is.na(AcIccPrae)]	## müsste AcIccPrae anstelle TaIcc sein
 		if(length(AcIccPrae) < MinObs){return (Abbruch)}
 		AcIccPrae <- mean(AcIccPrae, na.rm = TRUE)
 	
@@ -332,7 +332,7 @@ COMPget <- function(CompCol = COMPCol, CompTable, SDCget)
 
 
 SumTab <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,eventW){
-	laenge <- 180
+	laenge <- 1800
 	test2 <- as.data.frame(matrix(rep(NA,13*laenge),nrow=laenge,ncol=13))
 	CharacAdd(COMPTab,COMPCol)
 	for (i in 1:laenge){ 
@@ -375,7 +375,7 @@ SICSeparation <- function(SummarySdc, AcSicCol = "SicAcCol", TaSicCol = "SicTaCo
 			SicCol
 			}
 
-system.time(testob<-SumTab(SDCTab3,SDCset3,ICCTab3,ICCset3,COMPTab3,COMPset3,EventWset3))
+##system.time(testob<-SumTab(SDCTab3,SDCset3,ICCTab3,ICCset3,COMPTab3,COMPset3,EventWset3))
 
 system.time(testob<-SumTab(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWdata))
 
@@ -436,10 +436,15 @@ ICCDiff <- function(SummarySdc, TaIccCol = "TaIcc", AcIccPraeCol = "AcIccPrae",
 ##*****************************************************************************
 
 testob<-adjIccCalc(testob)
-testob[,"SicSep"] <- factor(testob1[,"SicSep"],order=F)
+testob[,"SicSep"] <- factor(testob[,"SicSep"],order=F)
 testobaov <- aov(diffIcc ~ SicSep,data=testob)
 summary(testobaov)
 summary.lm(testobaov)
+
+tapply(testob$diffIcc, testob$SicSep, mean) 
+tapply(testob$diffIcc, testob$SicSep, median) 
+tapply(testob$diffIcc, testob$SicSep, sd) 
+tapply(testob$diffIcc, testob$SicSep, summary)
 
 ##*****************************************************************************
 
