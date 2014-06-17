@@ -4,16 +4,16 @@ SaPConst$Datum <- as.Date(SaPConst$Datum)
 SaPConst$Datum <- substr(SaPConst$Datum,1,7)
 SaPConst <- SaPConst
 
-SaPMat <- SaPcreate(SaPConst)
-
-SaPMat <- SaPfill(SaPMat, SaPConst)
-
 
 SaPcreate <- function(SaPConstitution = SaPConst){
 
-	ColVec<-sort(SaPConstitution$Datum[!duplicated(SaPConstitution$Datum)],decreasing=F)
-	RowVec<-SaPConstitution$DSCD[!duplicated(SaPConstitution$DSCD)]
-	SicVec<-SaPConstitution$WC07021[!duplicated(SaPConstitution$DSCD)]	
+	ColVec<-sort(unique(SaPConstitution$Datum),decreasing=F)
+	DSCDPos<-!duplicated(SaPConstitution$DSCD)
+	##RowVec<-SaPConstitution$DSCD[!duplicated(SaPConstitution$DSCD)]
+	RowVec<-SaPConstitution$DSCD[DSCDPos]
+	##SicVec<-SaPConstitution$WC07021[!duplicated(SaPConstitution$DSCD)]
+	SicVec<-SaPConstitution$WC07021[DSCDPos]
+	
 	SicVec[nchar((SicVec))==3]<-paste("0",SicVec[nchar((SicVec))==3],sep="")
 
 	RowLeng<-length(RowVec)
@@ -37,12 +37,19 @@ SaPfill <- function(SaPMatrix = SaPMat,SaPConstitution = SaPConst){
 	SaPMatrix[,x] <<- SaPMatrix[,"DSCD"]%in%SaPConstitution[SaPConstitution$Datum==colnames(SaPMatrix)[x],"DSCD"]
 	invisible()
 	}
-
-	temp <- sapply(6:ncol(SaPMatrix),SaPvalues)
-	rm(temp)
+	
+	for(i in 6:ncol(SaPMatrix)){SaPvalues(i)}
+	##temp <- sapply(6:ncol(SaPMatrix),SaPvalues)
+	##rm(temp)
 
 	SaPMatrix
 	}
+
+SaPMat <- SaPcreate(SaPConst)
+
+SaPMat <- SaPfill(SaPMat, SaPConst)
+
+***************************************************
 
 SicFour<-function(x){
 		SaPMat$SIC_four==x}
@@ -60,6 +67,9 @@ SicFour <- sapply(levels(SaPMat$SIC_four),SicFour)
 SicThree <- sapply(levels(SaPMat$SIC_three),SicThree)
 SicTwo <- sapply(levels(SaPMat$SIC_two),SicTwo)
 SicOne <- sapply(levels(SaPMat$SIC_one),SicOne)
+
+***********************************************************
+
 
 SicFour.NaRm <- function(x){
 SicFour[is.na(SicFour[,x]),x] <<- FALSE
@@ -83,8 +93,10 @@ temp<-sapply(1:ncol(SicTwo), SicTwo.NaRm)
 temp<-sapply(1:ncol(SicOne), SicOne.NaRm)
 rm(temp)
 
+**********************************************************
 
-ColVec<-sort(SaPConst$Datum[!duplicated(SaPConst$Datum)],decreasing=F)
+##ColVec<-sort(SaPConst$Datum[!duplicated(SaPConst$Datum)],decreasing=F)
+ColVec<-sort(unique(SaPConst$Datum),decreasing=F)
 
 SicMatFour <- matrix(rep(NA,ncol(SicFour)*(length(ColVec)+1)),nrow=ncol(SicFour),ncol=(length(ColVec)+1))
 colnames(SicMatFour)<-c("SIC_four",ColVec)
@@ -102,9 +114,10 @@ SicMatOne <- matrix(rep(NA,ncol(SicOne)*(length(ColVec)+1)),nrow=ncol(SicOne),nc
 colnames(SicMatOne)<-c("SIC_one",ColVec)
 SicMatOne[,1]<-colnames(SicOne)
 
-SicList <- list(SicMatFour, SicMatThree, SicMatTwo, SicMatOne)
+##SicList <- list(SicMatFour, SicMatThree, SicMatTwo, SicMatOne)
 SicList <- list(SicMatFour = SicMatFour, SicMatThree = SicMatThree, 
 			SicMatTwo = SicMatTwo, SicMatOne = SicMatOne)
+********************************************************************
 
 SicCountFour<-function(x){
 SicList$SicMatFour[x,-1]<<-colSums(SaPMat[SicFour[,x],-c(1:5)])
@@ -122,11 +135,55 @@ SicCountOne<-function(x){
 SicList$SicMatOne[x,-1]<<-colSums(SaPMat[SicOne[,x],-c(1:5)])
 }
 
+
 temp <- sapply(1:ncol(SicFour),SicCountFour)
 temp <- sapply(1:ncol(SicThree),SicCountThree)
 temp <- sapply(1:ncol(SicTwo),SicCountTwo)
 temp <- sapply(1:ncol(SicOne),SicCountOne)
 rm(temp)
+
+
+**************************************************************
+SicSep<-function(SicLevel,SicCol){SaPMat[SicCol]==SicLevel}
+
+SicFour <- sapply(levels(SaPMat$SIC_four), SicSep, SicCol = "SIC_four")
+SicThree <- sapply(levels(SaPMat$SIC_three), SicSep, SicCol = "SIC_three")
+SicTwo <- sapply(levels(SaPMat$SIC_two), SicSep, SicCol = "SIC_two")
+SicOne <- sapply(levels(SaPMat$SIC_one), SicSep, SicCol = "SIC_one")
+
+SicPosList<-list(SicFour = SicFour, SicThree = SicThree, SicTwo = SicTwo, SicOne = SicOne ) 
+*****************************************************************
+
+Sic.NaRm <- function(x,SicNum){
+SicPosList[[SicNum]][is.na(SicPosList[[SicNum]][,x]),x] <<- FALSE
+}
+
+temp<-sapply(1:ncol(SicFour), Sic.NaRm, SicNum = "SicFour")
+temp<-sapply(1:ncol(SicThree), Sic.NaRm, SicNum = "SicThree")
+temp<-sapply(1:ncol(SicTwo), Sic.NaRm, SicNum = "SicTwo")
+temp<-sapply(1:ncol(SicOne), Sic.NaRm, SicNum = "SicOne")
+rm(temp)
+
+****************************************************
+
+SicCountOne<-function(x,y,){
+SicList$SicMatOne[x,-1]<<-colSums(SaPMat[SicOne[,x],-c(1:5)])
+}
+
+
+SicCount1 <- function(x,ListEle, BoMat){
+SicList[[ListEle]][x,-1]<<-colSums(SaPMat[BoMat[,x],-c(1:5)])
+}
+
+SicCount2 <- function(ListEle, BoMat){
+	temp<-sapply(1:ncol(BoMat),SicCount1,BoMat = BoMat, ListEle = ListEle)
+	rm(temp)}
+
+SicCount2("SicMatOne",SicPosList$SicOne)
+SicCount2("SicMatTwo",SicPosList$SicTwo)
+SicCount2("SicMatThree",SicPosList$SicThree)
+SicCount2("SicMatFour",SicPosList$SicFour)
+*************************************************
 
 ## kannst auch eine sapply in eine sapply packen
 
