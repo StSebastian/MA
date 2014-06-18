@@ -104,3 +104,73 @@ Sic.Count("SicThree",SicPosList$SicThree); Sic.Count("SicFour",SicPosList$SicFou
 
 ##************************************************************************
 
+Sap_Set <- function(DscdCol, CompChar, OneSicCol, TwoSicCol, ThrSicCol, FourSicCol, CharRows){
+	
+	CharRows <- NULL
+	list("DscdCol" = DscdCol, "CompChar" = CompChar, "OneSicCol" = OneSicCol,
+		"TwoSicCol" = TwoSicCol, "ThrSicCol" = ThrSicCol, "FourSicCol" = FourSicCol,
+		"CharRows" = CharRows)
+	}
+
+CharRows_Set <- function(SapData, SapSet){
+	CompCharCol <- SapSet$CompChar 
+	CompCharVal <- as.character(unique(Supdata[, CompChar]))
+	sapply(CompCharVal, function(x){x==CompCharCol}, simplify=F, USE.NAMES = TRUE)
+	}
+
+
+function(SapData, SapSet, CompChar, SapMat, ObsReq){
+	CharRows <- SapSet$CharRows
+	SicCol <- SapSet$
+	SapData <- SapData[CharRows[[CompChar]], ] ##Sowohl die Entfernung der CharRows als auch der Sic Colums kannst du eine Ebene/funktion vorher machen
+	DscdCol <- SuPset$DscdDCol
+	##SicRm <- SapData[,SicCol]== Sic 
+	##SapData <- SapData[SicRm, ]
+	
+	SicList <- sapply(c("SicFour","SicThree","SicTwo","SicOne"),SicCreate,simplify=F,USE.NAMES = TRUE)
+	
+	for(i in seq(along = SicList)){SicListEl <- SicList[[i]]} 
+		SicLength <- nchar(SicListEl[1,"Sic"])
+		SapData[,SicCol] <- subset(SapData[,SicCol],1,SicLength)		
+		
+		for(i in seq(along=colnames(SicListEl[,-1]))){
+			Datum <- colnames(SicListEl)[i+1]
+			DscdRm <- SapData[,DscdCol] %in% SapMat[SaPMat[,Datum],]
+			SapData2 <- SapData[DscdRm, ]
+			##CharVal <- CalcCharVal(SapData2, Sic, SapMat, Datum, ObsReq)
+			sapply(SicListEl[,"Sic"],CalcCharVal, SapData = SapData2, SapMat = SapMat, Datum = Datum, ObsReq = ObsReq)
+			SicListEl[,Datum] <- CharVal
+			}
+		SicList[[i]] <- SicListEl
+		}
+
+CalcCharVal <- function(Sic, SapData, SapMat, Datum, ObsReq){ ##SapMat ist SaPMat sollte aber später SaP Composition heißen also SapComp
+	##CharRows <- SapSet$CharRows
+	##DscdCol <- SapSet$DscdDCol
+	SicCol <- SapSet$  ##hier noch einfügen
+	
+	##SapData <- SapData[CharRows[[CompChar]], ] ##Sowohl die Entfernung der CharRows als auch der Sic Colums kannst du eine Ebene/funktion vorher machen
+	SicRm <- SapData2[,"Sic"]== Sic 
+	SapData <- SapData[SicRm, ]
+	##DscdRm <- SapData[,DscdCol] %in% SapMat[SaPMat[,Datum],]
+	##SapData <- SapData[DscdRm, ]
+	CharVal <- SapData[,Datum]
+	CharVal <- CharVal[CharVal != 0]
+	if(length(CharVal) >= ObsReq){CharVal <- mean(CharVal, na.rm = T)}
+	else CharVal <- NA
+	CharVal
+	}
+	
+	rollapply
+	f<-as.zoo(data.frame(rep(1,9),rep(1,9),1:9))
+	rollapply(f,FUN=mean,width=1,align="right",by.column=F)
+	rollapply(f,FUN=function(x){if(x==1)TRUE},width=1,align="right",by.column=T)
+	rollapply(f,FUN=mean,width=2,align="right",by.column=T)
+	f<-as.zoo(data.frame(rep(1,9),rep(1,9),1:9,rep("a",9)))
+	rollapply(f[,-4],FUN=function(x){if(x==1)TRUE},width=1,align="right",by.column=T)
+	
+	f<-as.zoo(data.frame(rep(1,9),rep(1,9),1:9))
+	t(apply(f,1,function(x){rollapply(x,FUN=mean,width=2,align="left",by.column=T)}))
+	t(rollapply(t(f),FUN=mean,width=2,align="left",by.column=T))	 
+	
+
