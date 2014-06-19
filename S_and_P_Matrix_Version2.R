@@ -104,62 +104,105 @@ Sic.Count("SicThree",SicPosList$SicThree); Sic.Count("SicFour",SicPosList$SicFou
 
 ##************************************************************************
 
-Sap_Set <- function(DscdCol, CompChar, OneSicCol, TwoSicCol, ThrSicCol, FourSicCol, CharRows){
+SapData <- read.csv("S&Pkons.csv",sep=";",dec=".")
+##as.Date(substring(colnames(SapData[,-c(1:3)]),2,11),"%Y.%m.%d")
+Dates <- as.Date(substring(colnames(SapData[,-c(1:3)]),2,11),"%Y.%m.%d")
+ColNames <- c(colnames(SapData[,1:3]),substring(Dates,1,7))
+colnames(SapData) <- ColNames
+
+Sap_Set <- function(DscdCol = "DSCD", CharCol = "KPI", OneSicCol = NULL, TwoSicCol = NULL, ThrSicCol = NULL, FourSicCol = NULL){
 	
 	CharRows <- NULL
-	list("DscdCol" = DscdCol, "CompChar" = CompChar, "OneSicCol" = OneSicCol,
+	list("DscdCol" = DscdCol, "CharCol" = CharCol, "OneSicCol" = OneSicCol,
 		"TwoSicCol" = TwoSicCol, "ThrSicCol" = ThrSicCol, "FourSicCol" = FourSicCol,
 		"CharRows" = CharRows)
 	}
 
-CharRows_Set <- function(SapData, SapSet){
-	CompCharCol <- SapSet$CompChar 
-	CompCharVal <- as.character(unique(Supdata[, CompChar]))
-	sapply(CompCharVal, function(x){x==CompCharCol}, simplify=F, USE.NAMES = TRUE)
+SapSet<-Sap_Set()
+
+CharRowsSet <- function(SapDataTab = SapData, SapSetOb = SapSet){
+	CharCol <- SapSetOb$CharCol
+	CharColVals <- SapDataTab[[CharCol]] 
+	CharVals <- as.character(unique(SapDataTab[, CharCol]))
+	CharRows <- sapply(CharVals, function(x,y){x==CharColVals }, simplify=F, USE.NAMES = TRUE)
+	CharRows
 	}
 
+SapSet$CharRows <- CharRowsSet()
 
-function(SapData, SapSet, CompChar, SapMat, ObsReq){
-	CharRows <- SapSet$CharRows
-	SicCol <- SapSet$
-	SapData <- SapData[CharRows[[CompChar]], ] ##Sowohl die Entfernung der CharRows als auch der Sic Colums kannst du eine Ebene/funktion vorher machen
-	DscdCol <- SuPset$DscdDCol
-	##SicRm <- SapData[,SicCol]== Sic 
-	##SapData <- SapData[SicRm, ]
-	
+
+TsSicCalc <- function(SapDataTab = SapData, SapSetOb = SapSet, CompChar = "MV", SapMat = SaPMat, ObsReq = 5){
+	CharRows <- SapSetOb$CharRows
+	##SicCol <- SapSetOb$
+	SapDataTab <- SapDataTab[CharRows[[CompChar]], ] ##Sowohl die Entfernung der CharRows als auch der Sic Colums kannst du eine Ebene/funktion vorher machen
+	DscdCol <- SapSetOb$DscdCol
+	##SicRm <- SapDataTab[,SicCol]== Sic 
+	##SapDataTab <- SapDataTab[SicRm, ]
+	SapDataTab <- merge(SapMat[,c("DSCD","SIC_four")],
+			SapDataTab,by.x="DSCD",by.y="DSCD",all=T,sort=F)
+	SapDataTab <- SapDataTab[!is.na(SapDataTab[,"SIC_four"]),]
+
 	SicList <- sapply(c("SicFour","SicThree","SicTwo","SicOne"),SicCreate,simplify=F,USE.NAMES = TRUE)
-	
-	for(i in seq(along = SicList)){SicListEl <- SicList[[i]]} 
+	##i <- 3
+	for(i in seq(along = SicList)){
+		SicListEl <- SicList[[i]]
 		SicLength <- nchar(SicListEl[1,"Sic"])
-		SapData[,SicCol] <- subset(SapData[,SicCol],1,SicLength)		
+		##if(SicLength==1){SicCol="SIC_one"}
+		##if(SicLength==2){SicCol="SIC_two"}
+		##if(SicLength==3){SicCol="SIC_three"}
+		##if(SicLength==4){SicCol="SIC_four"}
 		
-		for(i in seq(along=colnames(SicListEl[,-1]))){
-			Datum <- colnames(SicListEl)[i+1]
-			DscdRm <- SapData[,DscdCol] %in% SapMat[SaPMat[,Datum],]
-			SapData2 <- SapData[DscdRm, ]
-			##CharVal <- CalcCharVal(SapData2, Sic, SapMat, Datum, ObsReq)
-			sapply(SicListEl[,"Sic"],CalcCharVal, SapData = SapData2, SapMat = SapMat, Datum = Datum, ObsReq = ObsReq)
-			SicListEl[,Datum] <- CharVal
-			}
+		SapDataTab[,"SIC"] <- substring(SapDataTab[,"SIC_four"],1,SicLength)	##Sic Col noch definieren	
+		
+		SicListEl <- TsSicElCalc(SicListEl,SapDataTab,DscdCol,SapMat,ObsReq)
+
+		##for(i in seq(along=colnames(SicListEl[,-1]))){
+		##	Datum <- colnames(SicListEl)[i+1]
+		##	DscdRm <- SapDataTab[,DscdCol] %in% SaPMat[SaPMat[,Datum],"DSCD"]
+		##	SapDataTab2 <- SapDataTab[DscdRm, ]
+		##	##CharVal <- CalcCharVal(SapDataTab2, Sic, SapMat, Datum, ObsReq)
+		##	CharVal <- sapply(SicListEl[,"Sic"],CalcCharVal, SapDataTab = SapDataTab2, SapMat = SaPMat, Datum = Datum, ObsReq = ObsReq)
+		##	SicListEl[,Datum] <- CharVal
+		##	}
 		SicList[[i]] <- SicListEl
 		}
+	SicList
+	}
 
-CalcCharVal <- function(Sic, SapData, SapMat, Datum, ObsReq){ ##SapMat ist SaPMat sollte aber später SaP Composition heißen also SapComp
-	##CharRows <- SapSet$CharRows
-	##DscdCol <- SapSet$DscdDCol
-	SicCol <- SapSet$  ##hier noch einfügen
+TsSicElCalc <- function(SicListEl,SapDataTab,DscdCol,SaPMat,ObsReq){
+		for(i in seq(along=colnames(SicListEl[,-1]))){
+			Datum <- colnames(SicListEl)[i+1]
+			DscdRm <- SapDataTab[,DscdCol] %in% SaPMat[SaPMat[,Datum],"DSCD"]
+			SapDataTab2 <- SapDataTab[DscdRm, ]
+			##CharVal <- CalcCharVal(SapDataTab2, Sic, SapMat, Datum, ObsReq)
+			CharVal <- sapply(SicListEl[,"Sic"],CalcCharVal, SapDataTab = SapDataTab2, SapMat = SaPMat, Datum = Datum, ObsReq = ObsReq)
+			SicListEl[,Datum] <- CharVal
+		}
+		SicListEl
+		}
+
+
+CalcCharVal <- function(Sic, SapDataTab, SapMat, Datum, ObsReq){ ##SapMat ist SaPMat sollte aber später SaP Composition heißen also SapComp
+	##CharRows <- SapSetOb$CharRows
+	##DscdCol <- SapSetOb$DscdDCol
+	##SicCol <- SapSetOb$  ##hier noch einfügen
 	
-	##SapData <- SapData[CharRows[[CompChar]], ] ##Sowohl die Entfernung der CharRows als auch der Sic Colums kannst du eine Ebene/funktion vorher machen
-	SicRm <- SapData2[,"Sic"]== Sic 
-	SapData <- SapData[SicRm, ]
-	##DscdRm <- SapData[,DscdCol] %in% SapMat[SaPMat[,Datum],]
-	##SapData <- SapData[DscdRm, ]
-	CharVal <- SapData[,Datum]
+	##SapDataTab <- SapDataTab[CharRows[[CompChar]], ] ##Sowohl die Entfernung der CharRows als auch der Sic Colums kannst du eine Ebene/funktion vorher machen
+	SicRm <- SapDataTab[,"SIC"]== Sic 
+	##SapDataTab <- SapDataTab[SicRm, ]
+	##DscdRm <- SapDataTab[,DscdCol] %in% SapMat[SapMat[,Datum],]
+	##SapDataTab <- SapDataTab[DscdRm, ]
+	CharVal <- SapDataTab[SicRm,Datum]
 	CharVal <- CharVal[CharVal != 0]
-	if(length(CharVal) >= ObsReq){CharVal <- mean(CharVal, na.rm = T)}
-	else CharVal <- NA
+	if(length(CharVal) >= ObsReq){CharVal <- mean(CharVal, na.rm = T)
+	}else {CharVal <- NA}
+
 	CharVal
 	}
+
+SicListEl5<-SicListEl
+
+rollapply(SicListEl5[,"Sic"],FUN=CalcCharVal,SapDataTab = SapDataTab2, SapMat = SaPMat, Datum = Datum, ObsReq = ObsReq,width=1)
 	
 	rollapply
 	f<-as.zoo(data.frame(rep(1,9),rep(1,9),1:9))
@@ -173,4 +216,13 @@ CalcCharVal <- function(Sic, SapData, SapMat, Datum, ObsReq){ ##SapMat ist SaPMa
 	t(apply(f,1,function(x){rollapply(x,FUN=mean,width=2,align="left",by.column=T)}))
 	t(rollapply(t(f),FUN=mean,width=2,align="left",by.column=T))	 
 	
+a<-merge(SaPMat[,c("DSCD","SIC_four","SIC_three","SIC_two","SIC_one")],SapData,by.x="DSCD",by.y="DSCD",all=T,sort=F)
+a<-a[order(a[,"KPI"]),]
 
+system.time(for (i in 1:nrow(SicListEl5)){SicListEl5[i,Datum]<-CalcCharVal(SicListEl5[i,1],SapDataTab = SapDataTab2, SapMat = SaPMat, Datum = Datum, ObsReq = ObsReq)})
+system.time(a<-rollapply(SicListEl5[,"Sic"],FUN=CalcCharVal,SapDataTab = SapDataTab2, SapMat = SaPMat, Datum = Datum, ObsReq = ObsReq,width=1))
+system.time(CharVal <- sapply(SicListEl5[,"Sic"],CalcCharVal, SapDataTab = SapDataTab2, SapMat = SaPMat, Datum = Datum, ObsReq = ObsReq))
+
+SicListEl <- SicList[[4]]
+system.time(g<-TsSicElCalc(SicListEl,SapDataTab1,DscdCol,SaPMat,ObsReq) )
+system.time(f<-TsSicCalc(SapData,SapSet,"MV",SaPMat,5))
