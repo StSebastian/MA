@@ -102,11 +102,20 @@ EventWset <- function(PraeStart = -18, PraeLast = -3, PostStart = 3, PostLast = 
 		 	   MinObs = MinObs)
 	}
 
+
+EventWset2 <- function(Start = 3, Last = 16, Size = 12, 
+				MinObs = 4)
+	{	
+	EventWdata2 <<- list(Start = Start, Last = Last, 
+			   Size = Size, MinObs = MinObs)
+	}
+
 SetCol <- function(){
 		SDCset()
 		ICCset()
 		COMPset()
 		EventWset()
+		EventWset2()
 		}
 
 SetCol()
@@ -221,6 +230,30 @@ SDCget <- function(SdcCol = SDCCol, SDCTable, SDCRow, EVENTWset){
 		ShareAc = ShareAc, SicAc = SicAc, SicTa = SicTa)
 	}
 
+SDC2get <- function(SdcCol = SDCCol, SDCTable, SDCRow, EVENTWset){
+	
+	DatCol 	<- SdcCol$get()$DatCol	
+	AcquirorCol <- SdcCol$get()$AcCol
+	TargetCol   <- SdcCol$get()$TaCol
+	ShareAcCol  <- SdcCol$get()$ShareCol
+	SicAcqCol	<- SdcCol$get()$SicAcCol
+	SicTarCol   <- SdcCol$get()$SicTaCol
+	
+	Datum     <- SDCTable[SDCRow,DatCol]
+	
+	MuaDat      <- EventWget2(Datum, EVENTWset) ## function will be explained next
+
+	AcquirorDscd <- SDCTable[SDCRow,AcquirorCol]
+	TargetDscd   <- SDCTable[SDCRow,TargetCol]
+	ShareAc      <- SDCTable[SDCRow,ShareAcCol]
+	SicAc		 <- SDCTable[SDCRow,SicAcqCol]	
+	SicTa		 <- SDCTable[SDCRow,SicTarCol]	
+	
+	list( Datum = Datum, MuaDat = MuaDat, 
+		AcquirorDscd = AcquirorDscd, TargetDscd = TargetDscd, 
+		ShareAc = ShareAc, SicAc = SicAc, SicTa = SicTa)
+	}
+
 
 
 ## EventWget --> takes particular SDC Date as argument and the object storing
@@ -245,6 +278,22 @@ EventWget <- function(Datum, EventW)
 	
 	list(DatPrae = DatPrae, DatPost = DatPost, MinObs = MinObs)
 	}
+
+EventWget2 <- function(Datum, EventW2)
+	{
+	Datum <- as.POSIXlt(Datum) 
+	DatPost <- DatPrae <- rep(Datum,EventW2$Last - EventW2$Start+1)
+		
+	DatPrae$mon <- DatPrae$mon-(EventW2$Start:EventW2$Last)
+	DatPost$mon <- DatPost$mon+(EventW2$Start:EventW2$Last)
+	DatPrae <- substr(as.Date(DatPrae),1,7)
+	DatPost <- substr(as.Date(DatPost),1,7)
+	MinObs <- EventW2$MinObs
+	Size <- EventW2$Size	
+
+	list(DatPrae = DatPrae, DatPost = DatPost, MinObs = MinObs, Size = Size)
+	}
+
 
 
 ## ICCget --> takes the object storing the ICC Columns, the ICC table and
@@ -293,6 +342,48 @@ ICCget <- function(IccCol = ICCCol, ICCTable, SDCget){
 		list(TaIcc = TaIcc, AcIccPrae = AcIccPrae, AcIccPost = AcIccPost)
 		}
 
+ICCget2 <- function(IccCol = ICCCol, ICCTable, SDCget){
+	
+	DatCol  <- IccCol$get()$DatCol
+	DscdCol <- IccCol$get()$DscdCol
+	IccCol  <- IccCol$get()$IccCol
+	DatPrae <- SDCget$MuaDat$DatPrae
+	DatPost <- SDCget$MuaDat$DatPost
+	MinObs  <- SDCget$MuaDat$MinObs
+	Size  <- SDCget$MuaDat$Size
+	##DscdRows <- is.element(ICCTable[,DscdCol],c(SDCget$TargetDscd,SDCget$AcquirorDscd))  ##prüfen ob schneller
+	ICCTab  <- ICCTable[,c(DatCol,DscdCol,IccCol)]
+	ICC <- rep(NA,length(DatPrae))
+	ICC <- data.frame("TaIcc" = ICC, "AcIccPrae" = ICC,"AcIccPost" = ICC)
+
+		temp  <- ICCTab[, DscdCol] == SDCget$TargetDscd
+		tempTA  <- ICCTab[temp, c(DatCol,IccCol)]
+		tempDat <- is.element(tempTA[,DatCol],DatPrae)
+		IccExist <- is.element(DatPrae,tempTA[tempDat,DatCol])
+		ICC[IccExist,"TaIcc"] <- tempTA[tempDat, IccCol]
+		
+		
+		temp  <- ICCTab[, DscdCol] == SDCget$AcquirorDscd
+		tempAC  <- ICCTab[temp, c(DatCol,IccCol)]
+		tempDat <- is.element(tempAC[,DatCol],DatPrae)
+		IccExist <- is.element(DatPrae,tempAC[tempDat,DatCol])
+		ICC[IccExist,"AcIccPrae"] <- tempAC[tempDat, IccCol]
+		
+	
+		tempDat <- is.element(tempAC[,DatCol],DatPost)
+		IccExist <- is.element(DatPost,tempAC[tempDat,DatCol])
+		ICC[IccExist,"AcIccPost"] <- tempAC[tempDat, IccCol]
+
+		CalcMean<-function(x){
+			if(sum(is.na(x)) < MinObs){mean(x,na.rm=T)}
+			else NA}
+	
+		ICC <- zoo(ICC)
+		ICC <- rollapply(ICC,FUN = CalcMean,width = Size)
+			
+		##list(TaIcc = TaIcc, AcIccPrae = AcIccPrae, AcIccPost = AcIccPost)
+		}
+
 
 
 ## COMPget --> does the same as function ICC get but with the table and returns the mean MV
@@ -305,7 +396,7 @@ COMPget <- function(CompCol = COMPCol, CompTable, SDCget)
 		DscdCol <- CompCol$get()$DscdCol
 		DatPrae <- SDCget$MuaDat$DatPrae
 		DatPost <- SDCget$MuaDat$DatPost
-		
+				
 		CompTablePrae <- CompTable[CharacCol ,c(DscdCol, DatPrae)]
 		CompTablePost <- CompTable[CharacCol ,c(DscdCol, DatPost)]
 		
@@ -326,6 +417,44 @@ COMPget <- function(CompCol = COMPCol, CompTable, SDCget)
 		list(TaMv = TaMv, AcMvPrae = AcMvPrae, AcMvPost = AcMvPost)
 		}	
 
+COMPget2 <- function(CompCol = COMPCol, CompTable, SDCget)
+		{
+		CharacCol <- CompCol$get()$CharacList
+		CharacCol <- CharacCol$MV
+		DscdCol <- CompCol$get()$DscdCol
+		DatPrae <- SDCget$MuaDat$DatPrae
+		DatPost <- SDCget$MuaDat$DatPost
+		MinObs  <- SDCget$MuaDat$MinObs
+		Size 	  <- SDCget$MuaDat$Size
+
+		CompTablePrae <- CompTable[CharacCol ,c(DscdCol, DatPrae)]
+		CompTablePost <- CompTable[CharacCol ,c(DscdCol, DatPost)]
+		
+		Mv <- rep(NA,length(DatPrae))
+		Mv <- data.frame("TaMv" = Mv, "AcMvPrae" = Mv,"AcMvPost" = Mv)
+
+		temp <- CompTablePrae[,DscdCol] == SDCget$TargetDscd
+		Mv$TaMv <- CompTablePrae[temp,DatPrae]	
+		
+		temp <- CompTablePrae[,DscdCol] == SDCget$AcquirorDscd
+		Mv$AcMvPrae <- CompTablePrae[temp,DatPrae]	
+
+		CompRowAc <- CompTablePost[temp,DatPost]	
+		Mv$AcMvPost <- rowMeans(CompRowAc,na.rm=T)
+		
+		CalcMean<-function(x){
+			if(sum(is.na(x)) < MinObs){mean(x,na.rm=T)}
+			else NA}
+	
+		Mv <- zoo(Mv)
+		Mv <- rollapply(ICC,FUN = CalcMean,width = Size)
+		Mv
+
+		##if(any(sapply(list(TaMv,AcMvPrae,AcMvPost),length)==0))
+		##{return (list(TaMv = NA, AcMvPrae = NA, AcMvPost = NA))}
+
+		##list(TaMv = TaMv, AcMvPrae = AcMvPrae, AcMvPost = AcMvPost)
+		}
 
 
 ## ****************************************************************************
@@ -349,6 +478,37 @@ SumTab <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,eventW){
 	test2$SicSep <- SICSeparation(test2)
 	test2
 	}
+
+
+SumTab2 <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventW){
+	laenge <- 1800
+	nobs <- ((EventW$PraeLast - EventW$PraeStart+1)-EventW$Size+1)
+	test2 <- as.data.frame(matrix(rep(NA,(7+6*nobs)*laenge),nrow=laenge,ncol=7+6*nobs)))
+	CharacAdd(COMPTab,COMPCol)
+	for (i in 1:laenge){ 
+	temp  <- SDCget(SDCCol,SDCTab,i,EventW)
+	temp2 <- ICCget(ICCCol,ICCTab,temp)
+	temp3 <- COMPget(COMPCol,COMPTab,temp)
+	
+	test2[i,] <- c(as.character(temp$Datum), temp$AcquirorDscd, temp$TargetDscd, 
+		temp$ShareAc, temp$SicAc , temp$SicTa , NA,
+		temp2$TaIcc, temp2$AcIccPrae, temp2$AcIccPost,
+		temp3$TaMv, temp3$AcMvPrae, temp3$AcMvPost)	
+	}
+	
+	a <- EventW$PraeLast : (EventW$PraeStart - EventW$Size+1)
+	IccColNames <- c(paste("TaIcc",-(1:nobs),sep="_"),paste("AcIccPrae",-(1:nobs),sep="_"),
+			paste("AcIccPost",(1:nobs),sep="_"))
+
+	MvColNames  <- c(paste("TaMv",-(1:nobs),sep="_"),paste("AcMvPrae",-(1:nobs),sep="_"),
+			paste("AcMvPost",(1:nobs),sep="_"))
+
+	names(test2)<-c(names(SDCCol$get()),"SicSep",IccColNames,MvColNames)
+	test2$SicSep <- SICSeparation(test2)
+	test2
+	}
+
+
 
 
 SICSeparation <- function(SummarySdc, AcSicCol = "SicAcCol", TaSicCol = "SicTaCol")
@@ -397,6 +557,24 @@ adjIccCalc <- function(SumTab,NaRe = T, SicRe = T , SIC = 7, TargetSIC = "SicAcC
 		SumTab
 		}
 
+adjIccCalc2 <- function(SumTab,NaRe = F, SicRe = T , SIC = 7, TargetSIC = "SicAcCol", AcquirorSIC = "SicTaCol",
+		TaIccCol = "TaIcc", AcIccPraeCol = "AcIccPrae", AcIccPostCol = "AcIccPost", 
+		TaMvCol = "TaMv", AcMvPraeCol =  "AcMvPrae", AcMvPostCol = "AcMvPost"){
+		
+		if(NaRe){SumTab <- naClear(SumTab)}
+		
+		if(SicRe){SumTab <- removeInd(SumTab,SIC = SIC, TargetSIC = TargetSIC, 
+						AcquirorSIC = AcquirorSIC)}
+
+		SumTab <- ICCDiff(SumTab, TaIccCol = TaIccCol, AcIccPraeCol = AcIccPraeCol,
+		AcIccPostCol = AcIccPostCol, TaMvCol = TaMvCol, AcMvPraeCol =  AcMvPraeCol,
+		AcMvPostCol = AcMvPostCol)
+		
+		for (i in 1:12){SumTab[,paste("weightedIcc",i,"_")] <- ICCDiff2(SumTab, i)}
+
+		SumTab
+		}
+
 		
 naClear <- function(SumTab){
 		temp <- (SumTab[,c("TaIcc", "AcIccPrae", "AcIccPost", 
@@ -420,6 +598,27 @@ ICCDiff <- function(SummarySdc, TaIccCol = "TaIcc", AcIccPraeCol = "AcIccPrae",
 		AcIccPostCol = "AcIccPost", TaMvCol = "TaMv", AcMvPraeCol =  "AcMvPrae",
 		AcMvPostCol = "AcMvPost")
 			{
+			temp <- c(TaIccCol, AcIccPraeCol, AcIccPostCol,
+				     TaMvCol, AcMvPraeCol, AcMvPostCol)
+			SummarySdc[,temp] <- apply(SummarySdc[,temp],2,as.numeric)
+			temp <- SummarySdc[,TaIccCol] * SummarySdc[,TaMvCol]
+			temp <- temp + (SummarySdc[,AcIccPraeCol] * SummarySdc[,AcMvPraeCol])
+			temp <- temp/(SummarySdc[,TaMvCol] + SummarySdc[,AcMvPraeCol])
+
+			SummarySdcCalc <- cbind(SummarySdc, "weightedIcc" = temp)
+			
+			temp <- SummarySdc[,AcIccPostCol] - temp
+			SummarySdcCalc <- cbind(SummarySdcCalc, "diffIcc" = temp) 
+			}
+
+ICCDiff2 <- function(SummarySdc,zahl){
+			TaIccCol = paste("TaIcc",-zahl,sep"_")
+			AcIccPraeCol = paste("AcIccPrae",-zahl,sep"_")
+			AcIccPostCol = paste("AcIccPost",zahl,sep"_")
+			TaMvCol = paste("TaMv",-zahl,sep"_")
+			AcMvPraeCol =  paste("AcMvPrae",-zahl,sep"_")
+			AcMvPostCol = paste("AcMvPost",zahl,sep"_")
+			
 			temp <- c(TaIccCol, AcIccPraeCol, AcIccPostCol,
 				     TaMvCol, AcMvPraeCol, AcMvPostCol)
 			SummarySdc[,temp] <- apply(SummarySdc[,temp],2,as.numeric)
