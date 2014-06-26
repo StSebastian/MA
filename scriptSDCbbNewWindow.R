@@ -107,12 +107,45 @@ COMPset <- function(DscdCol = "DSCD", CharacCol = "KPI",
 ##	}
 
 
-EventWset <- function(Start = 3, Last = 16, Size = 6, 
+
+EventWset <- function(Close = 3, Far = 16, Size = 6, 
 				MinObs = 2)
 	{	
-	EventWdata <<- list(Start = Start, Last = Last, 
-			   Size = Size, MinObs = MinObs)
+	get <- function()	list(Close = Close, Far = Far, 
+					Size =  Size, MinObs = MinObs)
+	
+	COMPTab<<-ExtendFun(COMPTab,ceiling(Far/12))
+
+	setClose <- function(CloseVal) Close <<- CloseVal
+	setFar  <- function(FarVal,COMPTable = COMPTab) {Far <<- FarVal
+				COMPTab <<- ExtendFun(COMPTab,ceiling(FarVal/12))}	
+	setSize <- function(SizeVal) Size <<- SizeVal
+	setMinObs <- function(MinObsVal) MinObs <<- MinObsVal
+	
+	EventWdata <<- list(get = get, setClose = setClose, 
+			setFar = setFar, setSize = setSize,
+			setMinObs = setMinObs)
+
+	##EventWdata <<- list(Start = Start, Last = Last, 
+	##		   Size = Size, MinObs = MinObs)
 	}
+
+## ExtendFun --> Adds further empty columns to the company's characteristics table to account for
+##               possible post M&A periods reaching beyond the last date of the time series.
+## First argument is company's characteristics table, seccond the numer of colums to be added
+
+
+ExtendFun <- function(COMPTab,years=6){
+		monthAdd<-12*(years+1)
+		time <- as.Date("2014-01-01")
+		time <- as.POSIXlt(time)	
+		newRow <- rep(NA,nrow(COMPTab))
+		time$mon <- time$mon+1:monthAdd
+		time<-substr(as.Date(time),1,7)
+		COMPTab[,time] <- newRow
+		COMPTab
+		}
+
 
 SetCol <- function(){
 		SDCset()
@@ -177,28 +210,7 @@ CharacAdd <- function(COMPTable, COMPCol)
 		COMPCol
 	}
 
-
-
-## ExtendFun --> Adds further empty columns to the company's characteristics table to account for
-##               possible post M&A periods reaching beyond the last date of the time series.
-## First argument is company's characteristics table, seccond the numer of colums to be added
-
-ExtendFun <- function(COMPTable = COMPTab){
-		time <- as.Date("2014-01-01")
-		time <- as.POSIXlt(time)	
-		newRow <- rep(NA,nrow(COMPTable))
-		newFrame <- sapply(1:24,function(x){newRow})
-		time$mon <- time$mon+1:24
-		time<-substr(as.Date(time),1,7)
-		colnames(newFrame)<-time
-		newFrame
-		COMPTable <- cbind(COMPTable,newFrame)
-		}
-
-
 COMPCol <- CharacAdd(COMPTab, COMPCol)
-COMPTab3 <- ExtendFun(COMPTab3)		
-
 
 ## *************functions repeated for every M&A**************
 
@@ -234,7 +246,7 @@ COMPTab3 <- ExtendFun(COMPTab3)
 ##		ShareAc = ShareAc, SicAc = SicAc, SicTa = SicTa)
 ##	}
 
-SDCget <- function(SdcCol = SDCCol, SDCTable, SDCRow, EVENTWset){
+SDCget <- function(SdcCol = SDCCol, SDCTable, SDCRow, EventWset){
 	
 	DatCol 	<- SdcCol$get()$DatCol	
 	AcquirorCol <- SdcCol$get()$AcCol
@@ -245,7 +257,7 @@ SDCget <- function(SdcCol = SDCCol, SDCTable, SDCRow, EVENTWset){
 	
 	Datum     <- SDCTable[SDCRow,DatCol]
 	
-	MuaDat      <- EventWget(Datum, EVENTWset) ## function will be explained next
+	MuaDat      <- EventWget(Datum, EventWset) ## function will be explained next
 
 	AcquirorDscd <- SDCTable[SDCRow,AcquirorCol]
 	TargetDscd   <- SDCTable[SDCRow,TargetCol]
@@ -283,18 +295,18 @@ SDCget <- function(SdcCol = SDCCol, SDCTable, SDCRow, EVENTWset){
 ##	list(DatPrae = DatPrae, DatPost = DatPost, MinObs = MinObs)
 ##	}
 
-EventWget <- function(Datum, EventW)
+EventWget <- function(Datum, EventWset)
 	{
 	Datum <- as.POSIXlt(Datum) 
 	Datum$mday <- 15
-	DatPost <- DatPrae <- rep(Datum,EventW$Last - EventW$Start+1)
+	DatPost <- DatPrae <- rep(Datum,EventWset$get()$Far - EventWset$get()$Close+1)
 		
-	DatPrae$mon <- DatPrae$mon-(EventW$Start:EventW$Last)
-	DatPost$mon <- DatPost$mon+(EventW$Start:EventW$Last)
+	DatPrae$mon <- DatPrae$mon-(EventWset$get()$Close:EventWset$get()$Far)
+	DatPost$mon <- DatPost$mon+(EventWset$get()$Close:EventWset$get()$Far)
 	DatPrae <- substr(as.Date(DatPrae),1,7)
 	DatPost <- substr(as.Date(DatPost),1,7)
-	MinObs <- EventW$MinObs
-	Size <- EventW$Size	
+	MinObs <- EventWset$get()$MinObs
+	Size <- EventWset$get()$Size	
 
 	list(DatPrae = DatPrae, DatPost = DatPost, MinObs = MinObs, Size = Size)
 	}
@@ -484,13 +496,13 @@ SumTab <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,eventW){
 	}
 
 
-SumTab2 <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventW){
+SumTab2 <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWset){
 	laenge <- 1800
-	nobs <- ((EventW$Last - EventW$Start+1)-EventW$Size+1)
+	nobs <- ((EventWset$get()$Far - EventWset$get()$Close+1)-EventWset$get()$Size+1)
 	test2 <- as.data.frame(matrix(rep(NA,(7+6*nobs)*laenge),nrow=laenge,ncol=7+6*nobs))
 	CharacAdd(COMPTab,COMPCol)
 	for (i in 1:laenge){ 
-	temp  <- SDCget(SDCCol,SDCTab,i,EventW)
+	temp  <- SDCget(SDCCol,SDCTab,i,EventWset)
 	temp2 <- ICCget(ICCCol,ICCTab,temp)
 	temp3 <- COMPget(COMPCol,COMPTab,temp)
 	
@@ -500,7 +512,7 @@ SumTab2 <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventW){
 		temp3$TaMv, temp3$AcMvPrae, temp3$AcMvPost)	
 	}
 	
-	a <- EventW$Last : (EventW$Start - EventW$Size+1)
+	a <- EventWset$get()$Far : (EventWset$get()$Close - EventWset$get()$Size+1)
 	IccColNames <- c(paste("TaIcc",-(1:nobs),sep="_"),paste("AcIccPrae",-(1:nobs),sep="_"),
 			paste("AcIccPost",(1:nobs),sep="_"))
 
@@ -512,6 +524,8 @@ SumTab2 <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventW){
 	test2$SicSep <- SICSeparation(test2)
 	test2
 	}
+
+system.time(testob<-SumTab2(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWdata))
 
 
 
