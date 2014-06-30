@@ -476,28 +476,28 @@ COMPget <- function(CompCol = COMPCol, CompTable, SDCget)
 ## ****************************************************************************
 
 
-SumTab <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,eventW){
-	laenge <- 1800
-	test2 <- as.data.frame(matrix(rep(NA,13*laenge),nrow=laenge,ncol=13))
-	CharacAdd(COMPTab,COMPCol)
-	for (i in 1:laenge){ 
-	temp  <- SDCget(SDCCol,SDCTab,i,eventW)
-	temp2 <- ICCget(ICCCol,ICCTab,temp)
-	temp3 <- COMPget(COMPCol,COMPTab,temp)
+## SumTab <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,eventW){
+##	laenge <- 20
+##	test2 <- as.data.frame(matrix(rep(NA,13*laenge),nrow=laenge,ncol=13))
+##	CharacAdd(COMPTab,COMPCol)
+##	for (i in 1:laenge){ 
+##	temp  <- SDCget(SDCCol,SDCTab,i,eventW)
+##	temp2 <- ICCget(ICCCol,ICCTab,temp)
+##	temp3 <- COMPget(COMPCol,COMPTab,temp)
 	
-	test2[i,] <- c(as.character(temp$Datum), temp$AcquirorDscd, temp$TargetDscd, 
-		temp$ShareAc, temp$SicAc , temp$SicTa , NA,
-		temp2$TaIcc, temp2$AcIccPrae, temp2$AcIccPost,
-		temp3$TaMv, temp3$AcMvPrae, temp3$AcMvPost)	
-	}
-	names(test2)<-c(names(SDCCol$get()),"SicSep",names(temp2),names(temp3))
-	test2$SicSep <- SICSeparation(test2)
-	test2
-	}
+##	test2[i,] <- c(as.character(temp$Datum), temp$AcquirorDscd, temp$TargetDscd, 
+##		temp$ShareAc, temp$SicAc , temp$SicTa , NA,
+##		temp2$TaIcc, temp2$AcIccPrae, temp2$AcIccPost,
+##		temp3$TaMv, temp3$AcMvPrae, temp3$AcMvPost)	
+##	}
+##	names(test2)<-c(names(SDCCol$get()),"SicSep",names(temp2),names(temp3))
+##	test2$SicSep <- SICSeparation(test2)
+##	test2
+##	}
 
 
-SumTab2 <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWset){
-	laenge <- 1800
+SumTab <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWset){
+	laenge <- 20
 	nobs <- ((EventWset$get()$Far - EventWset$get()$Close+1)-EventWset$get()$Size+1)
 	test2 <- as.data.frame(matrix(rep(NA,(7+6*nobs)*laenge),nrow=laenge,ncol=7+6*nobs))
 	CharacAdd(COMPTab,COMPCol)
@@ -524,10 +524,6 @@ SumTab2 <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWset){
 	test2$SicSep <- SICSeparation(test2)
 	test2
 	}
-
-system.time(testob<-SumTab2(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWdata))
-
-
 
 
 SICSeparation <- function(SummarySdc, AcSicCol = "SicAcCol", TaSicCol = "SicTaCol")
@@ -556,40 +552,42 @@ SICSeparation <- function(SummarySdc, AcSicCol = "SicAcCol", TaSicCol = "SicTaCo
 
 ##system.time(testob<-SumTab(SDCTab3,SDCset3,ICCTab3,ICCset3,COMPTab3,COMPset3,EventWset3))
 ##system.time(testob<-SumTab2(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWdata))
+##system.time(testob<-SumTab(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWdata))
+
 system.time(testob<-SumTab(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWdata))
 
 
 
-adjIccCalc <- function(SumTab,NaRe = T, SicRe = T , SIC = 7, TargetSIC = "SicAcCol", AcquirorSIC = "SicTaCol",
-		TaIccCol = "TaIcc", AcIccPraeCol = "AcIccPrae", AcIccPostCol = "AcIccPost", 
-		TaMvCol = "TaMv", AcMvPraeCol =  "AcMvPrae", AcMvPostCol = "AcMvPost"){
+
+## adjIccCalc <- function(SumTab,NaRe = T, SicRe = T , SIC = 7, TargetSIC = "SicAcCol", AcquirorSIC = "SicTaCol",
+##		TaIccCol = "TaIcc", AcIccPraeCol = "AcIccPrae", AcIccPostCol = "AcIccPost", 
+##		TaMvCol = "TaMv", AcMvPraeCol =  "AcMvPrae", AcMvPostCol = "AcMvPost"){
 		
-		if(NaRe){SumTab <- naClear(SumTab)}
+##		if(NaRe){SumTab <- naClear(SumTab)}
+		
+##		if(SicRe){SumTab <- removeInd(SumTab,SIC = SIC, TargetSIC = TargetSIC, 
+##						AcquirorSIC = AcquirorSIC)}
+
+##		SumTab <- ICCDiff(SumTab, TaIccCol = TaIccCol, AcIccPraeCol = AcIccPraeCol,
+##		AcIccPostCol = AcIccPostCol, TaMvCol = TaMvCol, AcMvPraeCol =  AcMvPraeCol,
+##		AcMvPostCol = AcMvPostCol)
+
+##		SumTab
+##		}
+
+adjIccCalc <- function(SumTab,NaRe = F, SicRe = T , SIC = 7, TargetSIC = "SicAcCol", AcquirorSIC = "SicTaCol",
+		EventWset){
+		
+##		if(NaRe){SumTab <- naClear(SumTab)}
 		
 		if(SicRe){SumTab <- removeInd(SumTab,SIC = SIC, TargetSIC = TargetSIC, 
 						AcquirorSIC = AcquirorSIC)}
 
-		SumTab <- ICCDiff(SumTab, TaIccCol = TaIccCol, AcIccPraeCol = AcIccPraeCol,
-		AcIccPostCol = AcIccPostCol, TaMvCol = TaMvCol, AcMvPraeCol =  AcMvPraeCol,
-		AcMvPostCol = AcMvPostCol)
-
-		SumTab
-		}
-
-adjIccCalc2 <- function(SumTab,NaRe = F, SicRe = T , SIC = 7, TargetSIC = "SicAcCol", AcquirorSIC = "SicTaCol",
-		TaIccCol = "TaIcc", AcIccPraeCol = "AcIccPrae", AcIccPostCol = "AcIccPost", 
-		TaMvCol = "TaMv", AcMvPraeCol =  "AcMvPrae", AcMvPostCol = "AcMvPost"){
+##		SumTab <- ICCDiff(SumTab, TaIccCol = TaIccCol, AcIccPraeCol = AcIccPraeCol,
+##		AcIccPostCol = AcIccPostCol, TaMvCol = TaMvCol, AcMvPraeCol =  AcMvPraeCol,
+##		AcMvPostCol = AcMvPostCol)
 		
-		if(NaRe){SumTab <- naClear(SumTab)}
-		
-		if(SicRe){SumTab <- removeInd(SumTab,SIC = SIC, TargetSIC = TargetSIC, 
-						AcquirorSIC = AcquirorSIC)}
-
-		SumTab <- ICCDiff(SumTab, TaIccCol = TaIccCol, AcIccPraeCol = AcIccPraeCol,
-		AcIccPostCol = AcIccPostCol, TaMvCol = TaMvCol, AcMvPraeCol =  AcMvPraeCol,
-		AcMvPostCol = AcMvPostCol)
-		
-		for (i in 1:12){SumTab[,paste("weightedIcc",i,"_")] <- ICCDiff2(SumTab, i)}
+		SumTab <- ICCDiff2(SumTab, EventWset)
 
 		SumTab
 		}
@@ -613,42 +611,50 @@ removeInd <- function(SumTab,SIC = 7,TargetSIC = "SicAcCol", AcquirorSIC = "SicT
 		}
 
 
-ICCDiff <- function(SummarySdc, TaIccCol = "TaIcc", AcIccPraeCol = "AcIccPrae",
-		AcIccPostCol = "AcIccPost", TaMvCol = "TaMv", AcMvPraeCol =  "AcMvPrae",
-		AcMvPostCol = "AcMvPost")
-			{
+## ICCDiff <- function(SummarySdc, TaIccCol = "TaIcc", AcIccPraeCol = "AcIccPrae",
+##		AcIccPostCol = "AcIccPost", TaMvCol = "TaMv", AcMvPraeCol =  "AcMvPrae",
+##		AcMvPostCol = "AcMvPost")
+##			{
+##			temp <- c(TaIccCol, AcIccPraeCol, AcIccPostCol,
+##				     TaMvCol, AcMvPraeCol, AcMvPostCol)
+##			SummarySdc[,temp] <- apply(SummarySdc[,temp],2,as.numeric)
+##			temp <- SummarySdc[,TaIccCol] * SummarySdc[,TaMvCol]
+##			temp <- temp + (SummarySdc[,AcIccPraeCol] * SummarySdc[,AcMvPraeCol])
+##			temp <- temp/(SummarySdc[,TaMvCol] + SummarySdc[,AcMvPraeCol])
+
+##			SummarySdcCalc <- cbind(SummarySdc, "weightedIcc" = temp)
+			
+##			temp <- SummarySdc[,AcIccPostCol] - temp
+##			SummarySdcCalc <- cbind(SummarySdcCalc, "diffIcc" = temp) 
+##			}
+
+ICCDiff <- function(SummarySdc,EventWset){
+			nobs <- ((EventWset$get()$Far - EventWset$get()$Close+1)-EventWset$get()$Size+1)
+			zahl <- 1:nobs
+			TaIccCol <- paste("TaIcc",-zahl,sep="_")
+			AcIccPraeCol <- paste("AcIccPrae",-zahl,sep="_")
+			AcIccPostCol <- paste("AcIccPost",zahl,sep="_")
+			TaMvCol <- paste("TaMv",-zahl,sep="_")
+			AcMvPraeCol <-  paste("AcMvPrae",-zahl,sep="_")
+			AcMvPostCol <- paste("AcMvPost",zahl,sep="_")
+			
 			temp <- c(TaIccCol, AcIccPraeCol, AcIccPostCol,
 				     TaMvCol, AcMvPraeCol, AcMvPostCol)
 			SummarySdc[,temp] <- apply(SummarySdc[,temp],2,as.numeric)
 			temp <- SummarySdc[,TaIccCol] * SummarySdc[,TaMvCol]
 			temp <- temp + (SummarySdc[,AcIccPraeCol] * SummarySdc[,AcMvPraeCol])
 			temp <- temp/(SummarySdc[,TaMvCol] + SummarySdc[,AcMvPraeCol])
-
-			SummarySdcCalc <- cbind(SummarySdc, "weightedIcc" = temp)
+			temp <- as.data.frame(temp)
+			colnames(temp) <-  paste("WeightedIccPrae",-zahl,sep="_")
 			
-			temp <- SummarySdc[,AcIccPostCol] - temp
-			SummarySdcCalc <- cbind(SummarySdcCalc, "diffIcc" = temp) 
-			}
-
-ICCDiff2 <- function(SummarySdc,zahl){
-			TaIccCol = paste("TaIcc",-zahl,sep"_")
-			AcIccPraeCol = paste("AcIccPrae",-zahl,sep"_")
-			AcIccPostCol = paste("AcIccPost",zahl,sep"_")
-			TaMvCol = paste("TaMv",-zahl,sep"_")
-			AcMvPraeCol =  paste("AcMvPrae",-zahl,sep"_")
-			AcMvPostCol = paste("AcMvPost",zahl,sep"_")
+			SummarySdcCalc <- cbind(SummarySdc, temp)
+						
 			
-			temp <- c(TaIccCol, AcIccPraeCol, AcIccPostCol,
-				     TaMvCol, AcMvPraeCol, AcMvPostCol)
-			SummarySdc[,temp] <- apply(SummarySdc[,temp],2,as.numeric)
-			temp <- SummarySdc[,TaIccCol] * SummarySdc[,TaMvCol]
-			temp <- temp + (SummarySdc[,AcIccPraeCol] * SummarySdc[,AcMvPraeCol])
-			temp <- temp/(SummarySdc[,TaMvCol] + SummarySdc[,AcMvPraeCol])
-
-			SummarySdcCalc <- cbind(SummarySdc, "weightedIcc" = temp)
+			temp <- SummarySdc[,AcIccPostCol] - rev(temp)
+			colnames(temp) <-  paste("IccDiff",zahl,sep="_")
 			
-			temp <- SummarySdc[,AcIccPostCol] - temp
-			SummarySdcCalc <- cbind(SummarySdcCalc, "diffIcc" = temp) 
+			SummarySdcCalc <- cbind(SummarySdcCalc, temp) 
+			SummarySdcCalc
 			}
 
 ##*****************************************************************************
@@ -764,3 +770,12 @@ tapply(testob1$diffIcc, testob1$SicSep, mean)
 tapply(testob1$diffIcc, testob1$SicSep, median) 
 tapply(testob1$diffIcc, testob1$SicSep, sd) 
 tapply(testob1$diffIcc, testob1$SicSep, summary)
+
+
+
+function(SumTab,x){
+	SumTab[,x]*SumTab[,x]
+	SumTab[,x]
+
+colMeans(a[,70:79],na.rm=T)
+	
