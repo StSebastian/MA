@@ -1,3 +1,5 @@
+write.table(IccTab3,"test.txt",sep=";",row.names=F)
+##write.table(IccTab,"IccTabelle.txt",sep=";",row.names=F)
 setwd("C:/Users/Sebastian Stenzel/Desktop/Neuer Ordner (2)/R input test")
 
 ##source("C:/Users/Sebastian Stenzel/GitHub/test2/source_test.R")
@@ -284,7 +286,7 @@ DscdAdd <- function(ICCTab,ICCCol){
     ICCCol$setDscdLev(DscdList)
     }
     
-DscdAdd(ICCTab,ICCCol)
+##DscdAdd(ICCTab,ICCCol)
 ## *************functions repeated for every M&A**************
 
 
@@ -600,6 +602,8 @@ ICCget2 <- function(IccCol = ICCCol, ICCTab, SDCget){
 		##tempTA  <- tempTA[temp, c(DatCol,IccCol)]
         
         tempDat <- is.element(ICCTab[DscdRows, DatCol],DatPrae)
+        a<<-tempDat
+        f<<-DscdRows
         DscdRows[DscdRows] <- tempDat
 		IccExist <- is.element(DatPrae,ICCTab[DscdRows, DatCol])
 		ICC[IccExist,"TaIcc"] <- ICCTab[DscdRows, IccCol]
@@ -612,12 +616,12 @@ ICCget2 <- function(IccCol = ICCCol, ICCTab, SDCget){
         DscdRows <- DscdLev[,Acquiror2D]
         temp  <- ICCTab[DscdRows, DscdCol] == SDCget$AcquirorDscd
         DscdRows[DscdRows] <- temp
+        DscdRowsPrae <- DscdRows
         		##tempAC <- ICCTab[DscdLev[,Acquiror2D],] 
 		##temp  <- ICCTab[, DscdCol] == SDCget$AcquirorDscd
 		##tempAC  <- tempAC[temp, c(DatCol,IccCol)]
         
-        tempDat <- is.element(ICCTab[DscdRows, DatCol],DatPrae)
-        DscdRowsPrae <- DscdRows
+        tempDat <- is.element(ICCTab[DscdRowsPrae, DatCol],DatPrae)
         DscdRowsPrae[DscdRowsPrae] <- tempDat
 		IccExist <- is.element(DatPrae,ICCTab[DscdRowsPrae, DatCol])
 		ICC[IccExist,"AcIccPrae"] <- ICCTab[ DscdRowsPrae, IccCol]
@@ -907,8 +911,8 @@ COMPget <- function(CompCol = COMPCol, CompTable, SDCget)
 ##	}
 
 
-SumTab <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWset){
-	laenge <- 201
+SumTab1 <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWset){
+	laenge <- 6
     ICCTab <- ICCTab[,as.character(ICCCol$get()[c("DatCol","DscdCol","IccCol")])]
     DSCDList <- c(SDCTab[1:laenge,c("SpTaDscd")],SDCTab[1:laenge,"SpAcDscd"])
 
@@ -916,12 +920,14 @@ SumTab <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWset){
 
     ICCTab <- ICCTab[IccSampleRows,]
     
+    DscdAdd(ICCTab,ICCCol)
+    
     nobs <- ((EventWset$get()$Far - EventWset$get()$Close+1)-EventWset$get()$Size+1)
 	test2 <- as.data.frame(matrix(rep(NA,(7+6*nobs)*laenge),nrow=laenge,ncol=7+6*nobs))
 	CharacAdd(COMPTab,COMPCol)
 	for (i in 1:laenge){ 
 	temp  <- SDCget(SDCCol,SDCTab,i,EventWset)
-	temp2 <- ICCget(ICCCol,ICCTab,temp)
+	temp2 <- ICCget3(ICCCol,ICCTab,temp)
 	temp3 <- COMPget(COMPCol,COMPTab,temp)
 	
 	test2[i,] <- c(as.character(temp$Datum), temp$AcquirorDscd, temp$TargetDscd, 
@@ -943,13 +949,13 @@ SumTab <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWset){
 	test2
 	}
     
-system.time(testob<-SumTab(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWdata))
+system.time(testob<-SumTab1(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWdata))
 
     
 SumTab <- function(SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWset){
 	##für ICCget4
     
-    laenge <- 200
+    laenge <- 20
     ICCTab <- ICCTab[,as.character(ICCCol$get()[c("DatCol","DscdCol","IccCol")])]
     DSCDList <- c(SDCTab[1:laenge,c("SpTaDscd")],SDCTab[1:laenge,"SpAcDscd"])
 
