@@ -120,8 +120,8 @@ Sdc_Adjust <- function(TableStored,ColPropList){
 		SdcTable[,SpShAfterTra:= SpShAfterTra/100]                          ##
 		SdcTable[,SpShAcq:= SpShAcq/100]                                    ##
         
-        ##IccDatCol <- ColPropList$get()$ICC$DatCol                           ##
-        ##IccTable[,Datum:=as.Date(strptime(Datum,"%Y-%m-%d"))]               ###### warum klappt die Auwahl nicht über eine variable 
+        IccDatCol <- ColPropList$get()$ICC$DatCol                           ##
+        IccTable[,{IccDatCol}:=as.Date(strptime(IccTable[[IccDatCol]],"%Y-%m-%d"))]               ###### warum klappt die Auwahl nicht über eine variable 
         
 		Tables <- TableStored$get()
 		Tables$SDC <- SdcTable
@@ -222,12 +222,12 @@ Icc_Set <- function(DatCol = "Datum", DscdCol = "Company_Code",
 
 Company_Set <- function(DscdCol = "DSCD", CharacCol = "KPI",   ######hier noch prüfen
 					 SicCol = "WC07021",CharacList = NULL){	
-	if(!is.null(CharacList)){
+	if(!is.null(CharacList)){                                       ###hier noch umstellen
                     COMPCol  <- ColPropList$get()$COMPANY
                     COMPCol$CharacList <- CharacList}
 	else {
-                    COMPCol <- list("DscdCol" = DscdCol, "CharacCol" = CharacCol, 
-					"SicCol" = SicCol, "CharacList" = CharacList)}
+                   COMPCol <- list("DscdCol" = DscdCol, "CharacCol" = CharacCol, 
+				   "SicCol" = SicCol, "CharacList" = CharacList)}
                    COMPCol 
 	}
 
@@ -238,8 +238,11 @@ Event_W_set <- function(Close = 3, Far = 16, Size = 6,
 					Size =  Size, MinObs = MinObs)
 	
 	Extend_Fun(TableStored,ceiling(Far/12))
+    
+    list(Close = Close, Far = Far, 
+					Size =  Size, MinObs = MinObs)
 	
-	CompanyTable <- TableStored$get()$COMPANY           ######### warum hier Table ???
+	##CompanyTable <- TableStored$get()$COMPANY           ######### warum hier Table ???
 
 	setClose <- function(CloseVal) Close <<- CloseVal
 	setFar  <- function(FarVal,TableStore = TableStored) {Far <<- FarVal  ##TableStored fehler prüfen
@@ -308,11 +311,16 @@ Icc_Conv_Date <- function(ColPropList, TableStored){
 		IccTable <- TableStored$get()$ICC
 		IccProp <- ColPropList$get()$ICC
 		DatCol <- IccProp$DatCol
-		
+		IccDatCol <- ColPropList$get()$ICC$DatCol  ##X
         
-        IccTable[ ,Datum:=substr(Datum,1,7)]        ###
+        IccTable[,{IccDatCol}:=substr(IccTable[[IccDatCol]],1,7)]
+        ##IccTable[ ,Datum:=substr(Datum,1,7)]
         ##IccTable[ ,{DatCol}:=substr(DatCol,1,7)]                  ### hier wieder dasselbe Problem it dem objekt
 		##IccTable[ ,DatCol] <- substr(IccTable[ ,DatCol],1,7)
+        IccDatCol <- ColPropList$get()$ICC$DatCol                           ##
+
+        
+        
         
 		Tables <- TableStored$get()
 		Tables$ICC <- IccTable
@@ -416,7 +424,6 @@ Icc_Get <- function(ColPropList, TableStored, Carrier, Sample=FALSE){
 
         
         tempDat <- is.element(tempTA[[DatCol]],DatPrae)   
-                          ##
 		IccExist <- is.element(DatPrae,tempTA[[DatCol]][tempDat])       ##
 		ICC[IccExist,"TaIcc"] <- tempTA[tempDat, IccCol,with=F]         ##
 
@@ -428,9 +435,7 @@ Icc_Get <- function(ColPropList, TableStored, Carrier, Sample=FALSE){
 		ICC[IccExist,"AcIccPrae"] <- tempAC[tempDat, IccCol,with=F]     ##   
 
 		tempDat <- is.element(tempAC[[DatCol]],DatPost)     
-        a<<-  tempDat  ##
 		IccExist <- is.element(DatPost,tempAC[[DatCol]][tempDat])  
-        b<<-    IccExist    ## 
 		ICC[IccExist,"AcIccPost"] <- tempAC[tempDat, IccCol,with=F]     ##
       
 		CalcMean<-function(x){
