@@ -6,49 +6,13 @@ Read_Table<-function(){
     ##SdcTab <- read.csv("SDCtest.csv",sep=";",dec=".",colClasses=c("character", "numeric", "character", 
     ##                "character", "character", "character", "character", "character", "character", 
     ##                "character", "character", "character", "character", "numeric", "numeric"))
-	##SdcTab1 <- fread("SDCtest.csv")
+
     SdcTab <- fread("SDCtest.csv",sep=";",colClasses=c("character", "numeric", "character", "character",
                             "character", "character", "character", "character", "character", "character", 
                             "character", "character", "character", "numeric", "numeric"))
     
     ##write.table(test,"ICCSample.txt",sep=";",dec=",")
-   
-    ## IccTab<-read.csv("ICCSample3.txt",sep=";",stringsAsFactors=F,dec=".",
-    ##                   colClasses=c("integer", "character", "numeric", "character", "numeric", "integer",
-    ##                    "numeric", "numeric", "character", "integer", "character", "Date", "numeric", 
-    ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "Date", "Date", "numeric", 
-    ##                    "numeric", "numeric", "Date", "numeric", "character", "Date", "numeric", "numeric", 
-    ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "character", 
-    ##                    "Date", "Date", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", 
-    ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", 
-    ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", 
-    ##                    "numeric", "numeric", "numeric"))
-                        
-    ##IccTab2<-read.csv("test.txt",sep=";",stringsAsFactors=F,dec=".",
-    ##                   colClasses=c("integer", "character", "numeric", "character", "numeric", "integer",
-    ##                    "numeric", "numeric", "character", "integer", "character", "Date", "numeric", 
-    ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "Date", "Date", "numeric", 
-    ##                    "numeric", "numeric", "Date", "numeric", "character", "Date", "numeric", "numeric", 
-    ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "character", 
-    ##                    "Date", "Date", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", 
-    ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", 
-    ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", 
-    ##                    "numeric", "numeric", "numeric"))                   
-                        
-                        
-    ##IccTab2<-fread("ICCSample3.txt")                        
-    ##IccTab<-fread("ICCSample3.txt",sep=";",stringsAsFactors=F,##dec=".",
-    ##     colClasses=c("integer", "character", "numeric", "character", "numeric", "integer",
-    ##                    "numeric", "numeric", "character", "integer", "character", "Date", "numeric", 
-    ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "Date", "Date", "numeric", 
-    ##                    "numeric", "numeric", "Date", "numeric", "character", "Date", "numeric", "numeric", 
-   ##                     "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "character", 
-    ##                    "Date", "Date", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", 
-    ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", 
-    ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", 
-    ##                    "numeric", "numeric", "numeric"))    
-    
-    
+
     ##IccTab<-read.csv("ICC_dataSet_2012-05-29_12_45_06.txt.txt",sep=";",stringsAsFactors=F,dec=",",
     ##                 colClasses=c("integer", "character", "numeric", "character", "numeric", "integer",
     ##                    "numeric", "numeric", "character", "integer", "character", "Date", "numeric", 
@@ -59,11 +23,13 @@ Read_Table<-function(){
     ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", 
     ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", 
     ##                    "numeric", "numeric", "numeric"))
-                        
+    
+    ##IccTab2<-fread("ICCSample3.txt")   
+    
     IccTab<-fread("IccTabelle.txt")                    
                         
     ##IccTab2<-fread("ICC_dataSet_2012-05-29_12_45_06.txt.txt",sep=";",stringsAsFactors=F,##dec=",",
-    ##                  colClasses=c("integer", "character", "numeric", "character", "numeric", "integer",
+    ##                 colClasses=c("integer", "character", "numeric", "character", "numeric", "integer",
     ##                    "numeric", "numeric", "character", "integer", "character", "Date", "numeric", 
     ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "Date", "Date", "numeric", 
     ##                    "numeric", "numeric", "Date", "numeric", "character", "Date", "numeric", "numeric", 
@@ -75,18 +41,15 @@ Read_Table<-function(){
 	
 	##CompanyTab <- read.csv("M&Akons.csv",header=T,stringsAsFactors=F,sep=";",dec=".")
 
-    ##CompanyTab2 <- fread("M&Akons.csv")
-
     CompanyTab <- fread("M&Akons.csv",header=T,stringsAsFactors=F,sep=";")
 
-
 	TableList <-list("SDC" = SdcTab, "ICC" = IccTab, "COMPANY" = CompanyTab)
-	##TableList <- list("SDC" = SdcTab)	
-	get <- function()TableList
+	
+    Get <- function()TableList
 	setTable <- function(NewTable)TableList <<- NewTable	
-	TableStored <<- list(setTable = setTable, get = get)
-	##TableObj$setTable(TableList)
-	##TableObj <<- TableStored
+	
+    TableStored <<- list(setTable = setTable, Get = Get)
+
     
 	}
 
@@ -96,7 +59,7 @@ Read_Table()
 
 Name_Comp_Table <- function(TableStored = TableStored, NChar = 5 , StartDate = "1978-01-01"){
 		
-		CompanyTable <- TableStored$get()$COMPANY
+		CompanyTable <- TableStored$Get()$COMPANY
 		StartDate <- as.POSIXlt( StartDate)
 		number <- ncol(CompanyTable) - NChar
 		temp <- rep(StartDate,number)
@@ -106,7 +69,7 @@ Name_Comp_Table <- function(TableStored = TableStored, NChar = 5 , StartDate = "
         newNames <- c(names(CompanyTable)[1:NChar],temp)
         setnames(CompanyTable,names(CompanyTable),newNames)
         
-		Tables <- TableStored$get()
+		Tables <- TableStored$Get()
 		Tables$COMPANY <- CompanyTable
 		TableStored$setTable(Tables)
 		}
@@ -131,7 +94,7 @@ Icc_Set <- function(DatCol = "Datum", DscdCol = "Company_Code",
 Company_Set <- function(DscdCol = "DSCD", CharacCol = "KPI",   ######hier noch prüfen
 					 SicCol = "WC07021",CharacList = NULL){	
 	if(!is.null(CharacList)){                                       ###hier noch umstellen
-                    COMPCol  <- ColPropList$get()$COMPANY
+                    COMPCol  <- ColPropList$Get()$COMPANY
                     COMPCol$CharacList <- CharacList}
 	else {
                    COMPCol <- list("DscdCol" = DscdCol, "CharacCol" = CharacCol, 
@@ -142,7 +105,7 @@ Company_Set <- function(DscdCol = "DSCD", CharacCol = "KPI",   ######hier noch p
 Event_W_set <- function(Close = 3, Far = 16, Size = 6, 
 				MinObs = 2)
 	{	
-	get <- function()	list(Close = Close, Far = Far, 
+	Get <- function()	list(Close = Close, Far = Far, 
 					Size =  Size, MinObs = MinObs)
 	
 	Extend_Fun(TableStored,ceiling(Far/12))
@@ -157,7 +120,7 @@ Event_W_set <- function(Close = 3, Far = 16, Size = 6,
 	setSize <- function(SizeVal) Size <<- SizeVal
 	setMinObs <- function(MinObsVal) MinObs <<- MinObsVal
 	
-	EventWdata <<- list(get = get, setClose = setClose, 
+	EventWdata <<- list(Get = Get, setClose = setClose, 
 			setFar = setFar, setSize = setSize,
 			setMinObs = setMinObs)
 
@@ -167,7 +130,7 @@ Event_W_set <- function(Close = 3, Far = 16, Size = 6,
     
 
 Extend_Fun <- function(TableStored = TableStored, years = 6){
-		CompanyTable <- TableStored$get()$COMPANY
+		CompanyTable <- TableStored$Get()$COMPANY
 		monthAdd<-12*(years+1)
 		time <- as.Date("2014-01-01")
 		time <- as.POSIXlt(time)	
@@ -177,7 +140,7 @@ Extend_Fun <- function(TableStored = TableStored, years = 6){
 		CompanyTable[,time] <- newRow
         CompanyTable[,{time}:=newRow]       ##########################################
         
-		Tables <- TableStored$get()
+		Tables <- TableStored$Get()
 		Tables$COMPANY <- CompanyTable
 		TableStored$setTable(Tables)
 		}
@@ -186,7 +149,7 @@ Extend_Fun <- function(TableStored = TableStored, years = 6){
 Col_Prop <- function(){
 
 		PropList <- list(NULL)
-		get <- function()PropList
+		Get <- function()PropList
 
 		setSdc <- function(...) if (length(list(...))==0){PropList$SDC <<- Sdc_Set()}
 						else {PropList$SDC <<- Sdc_Set(...)}
@@ -205,7 +168,7 @@ Col_Prop <- function(){
                         PropList$EVENTW <<- Event_W_set()
                         }
     
-		ColPropList <<- list(get = get, setSdc = setSdc, setICC = setIcc, setCompany = setCompany,
+		ColPropList <<- list(Get = Get, setSdc = setSdc, setICC = setIcc, setCompany = setCompany,
 					setEventW = setEventW, setDefault = setDefault)	
 		}
 
@@ -215,8 +178,8 @@ ColPropList$setDefault()
     
 Sdc_Adjust <- function(TableStored,ColPropList){
 		
-		SdcTable <- TableStored$get()$SDC
-        IccTable <- TableStored$get()$ICC
+		SdcTable <- TableStored$Get()$SDC
+        IccTable <- TableStored$Get()$ICC
 		ColNamesSdc <- c("SpDate","SpValueTrans","SpTaName","SpTaDscd","SpAcName",
 		"SpAcDscd","SpAcSic","SpAcInd","SpTaSic","SpTaInd","SpDateAnn",
 		"SpEqV","SpEpV","SpShAfterTra","SpShAcq")
@@ -232,9 +195,9 @@ Sdc_Adjust <- function(TableStored,ColPropList){
 		SdcTable[,SpShAfterTra:= SpShAfterTra/100]
 		SdcTable[,SpShAcq:= SpShAcq/100]
         
-        IccDatCol <- ColPropList$get()$ICC$DatCol
+        IccDatCol <- ColPropList$Get()$ICC$DatCol
         IccTable[,{IccDatCol}:=as.Date(strptime(IccTable[[IccDatCol]],"%Y-%m-%d"))]     
-		Tables <- TableStored$get()
+		Tables <- TableStored$Get()
 		Tables$SDC <- SdcTable
 		TableStored$setTable(Tables)
 		}
@@ -244,15 +207,15 @@ Sdc_Adjust(TableStored,ColPropList)
         
 Icc_Conv_Date <- function(ColPropList, TableStored){
 
-		IccTable <- TableStored$get()$ICC
-		IccProp <- ColPropList$get()$ICC
+		IccTable <- TableStored$Get()$ICC
+		IccProp <- ColPropList$Get()$ICC
 		DatCol <- IccProp$DatCol
-		IccDatCol <- ColPropList$get()$ICC$DatCol  ##X
+		IccDatCol <- ColPropList$Get()$ICC$DatCol  ##X
         
         IccTable[,{IccDatCol}:=substr(IccTable[[IccDatCol]],1,7)]
-        IccDatCol <- ColPropList$get()$ICC$DatCol                        
+        IccDatCol <- ColPropList$Get()$ICC$DatCol                        
 
-		Tables <- TableStored$get()
+		Tables <- TableStored$Get()
 		Tables$ICC <- IccTable
 		TableStored$setTable(Tables)
 		}
@@ -262,8 +225,8 @@ Icc_Conv_Date(ColPropList, TableStored)
 
 Icc_Prop_Charac_List_Set <- function(TableStored = TableStored, ColPropList){
 		
-		CompanyTable <- TableStored$get()$COMPANY 
-		CompProp  <- ColPropList$get()$COMPANY
+		CompanyTable <- TableStored$Get()$COMPANY 
+		CompProp  <- ColPropList$Get()$COMPANY
 		CharacCol <- CompProp$CharacCol
 		CharacCol <- CompanyTable[[CharacCol]]          ##
 		CharacCol <- as.factor(CharacCol)		
@@ -279,8 +242,8 @@ Icc_Prop_Charac_List_Set <- function(TableStored = TableStored, ColPropList){
 
 Sdc_Get <- function(ColPropList, TableStored, SDCRow,Carrier){
 	
-	SdcProp   <- ColPropList$get()$SDC
-	SdcTable <- TableStored$get()$SDC
+	SdcProp   <- ColPropList$Get()$SDC
+	SdcTable <- TableStored$Get()$SDC
 	
 	DatCol 	<- SdcProp$DatCol	
 	AcquirorCol <- SdcProp$AcCol
@@ -309,19 +272,19 @@ Sdc_Get <- function(ColPropList, TableStored, SDCRow,Carrier){
 
 Event_W_Get <- function(Datum){
 	
-	EventWProp <- ColPropList$get()$EVENTW
+	EventWProp <- ColPropList$Get()$EVENTW
 	
 	Datum <- as.POSIXlt(Datum) 
 	Datum$mday <- 15
-	DatPost <- DatPrae <- rep(Datum,EventWProp$get()$Far - EventWProp$get()$Close+1)
+	DatPost <- DatPrae <- rep(Datum,EventWProp$Get()$Far - EventWProp$Get()$Close+1)
 		
-    ##DatPrae$mon <- DatPrae$mon-(EventWProp$get()$Close:EventWProp$get()$Far)          
-	DatPrae$mon <- DatPrae$mon-(EventWProp$get()$Far:EventWProp$get()$Close)    ##
-	DatPost$mon <- DatPost$mon+(EventWProp$get()$Close:EventWProp$get()$Far)
+    ##DatPrae$mon <- DatPrae$mon-(EventWProp$Get()$Close:EventWProp$Get()$Far)          
+	DatPrae$mon <- DatPrae$mon-(EventWProp$Get()$Far:EventWProp$Get()$Close)    ##
+	DatPost$mon <- DatPost$mon+(EventWProp$Get()$Close:EventWProp$Get()$Far)
 	DatPrae <- substr(as.Date(DatPrae),1,7)
 	DatPost <- substr(as.Date(DatPost),1,7)
-	MinObs <- EventWProp$get()$MinObs
-	Size <- EventWProp$get()$Size	
+	MinObs <- EventWProp$Get()$MinObs
+	Size <- EventWProp$Get()$Size	
 
 	list(DatPrae = DatPrae, DatPost = DatPost, MinObs = MinObs, Size = Size)
 	}
@@ -329,13 +292,13 @@ Event_W_Get <- function(Datum){
 
 Icc_Get <- function(ColPropList, TableStored, Carrier, Sample=FALSE){
 	
-	IccProp <- ColPropList$get()$ICC	
+	IccProp <- ColPropList$Get()$ICC	
 	
-    if(Sample){IccTable <- TableStored$get()$ICCsample}
-    else{IccTable <- TableStored$get()$ICC}
+    if(Sample){IccTable <- TableStored$Get()$ICCsample}
+    else{IccTable <- TableStored$Get()$ICC}
 	
-    SdcData <- Carrier$get()$SDC
-    PeriodData <- Carrier$get()$EVENTW
+    SdcData <- Carrier$Get()$SDC
+    PeriodData <- Carrier$Get()$EVENTW
 	
 	DatCol  <- IccProp$DatCol
 	DscdCol <- IccProp$DscdCol
@@ -381,10 +344,10 @@ Icc_Get <- function(ColPropList, TableStored, Carrier, Sample=FALSE){
 
 Comp_Get <- function(ColPropList, TableStored, Carrier){
 		
-		CompProp <- ColPropList$get()$COMPANY
-		CompanyTable <- TableStored$get()$COMPANY		
-		SdcData <-  Carrier$get()$SDC	
-        PeriodData <- Carrier$get()$EVENTW
+		CompProp <- ColPropList$Get()$COMPANY
+		CompanyTable <- TableStored$Get()$COMPANY		
+		SdcData <-  Carrier$Get()$SDC	
+        PeriodData <- Carrier$Get()$EVENTW
     
 		CharacCol <- CompProp$CharacList
 		CharacCol <- CharacCol$MV
@@ -432,10 +395,10 @@ Data_Retrieve <- function(){
 	retrieveIcc <- function(...){MaaData$ICC <<- Icc_Get(...)}
 	retrieveCompany <- function(...){MaaData$COMPANY <<- Comp_Get(...)}
 	retrieveEventW <- function(...){MaaData$EVENTW <<- Event_W_Get(...)}
-	get <- function()MaaData
+	Get <- function()MaaData
 	
 	list(retrieveSdc = retrieveSdc, retrieveIcc = retrieveIcc, retrieveCompany = retrieveCompany, 
-		retrieveEventW = retrieveEventW, get = get)
+		retrieveEventW = retrieveEventW, Get = Get)
 	}
 
 ##Carrier <- Data_Retrieve()
@@ -443,29 +406,29 @@ Data_Retrieve <- function(){
 ##Carrier$retrieveSdc(ColPropList, TableStored,6,Carrier)
 ##Carrier$retrieveIcc(ColPropList, TableStored, Carrier)
 ##Carrier$retrieveCompany(ColPropList, TableStored, Carrier)
-##Carrier$get()
+##Carrier$Get()
 
 
 
 SumTab <- function(ColPropList,TableStored){
 	laenge <- 1800
 
-    SdcTable <- TableStored$get()$SDC
-    IccTable <- TableStored$get()$ICC
-    IccTable <- IccTable[,as.character(ColPropList$get()$ICC),with=F]
+    SdcTable <- TableStored$Get()$SDC
+    IccTable <- TableStored$Get()$ICC
+    IccTable <- IccTable[,as.character(ColPropList$Get()$ICC),with=F]
     
-    AcquirorDscds <- ColPropList$get()$SDC$AcCol
-    TargetDscds <- ColPropList$get()$SDC$TaCol
-    IccDscdCol <- ColPropList$get()$ICC$DscdCol
+    AcquirorDscds <- ColPropList$Get()$SDC$AcCol
+    TargetDscds <- ColPropList$Get()$SDC$TaCol
+    IccDscdCol <- ColPropList$Get()$ICC$DscdCol
     DscdsList <- c( SdcTable[[AcquirorDscds]][1:laenge], SdcTable[[TargetDscds]][1:laenge])
     IccSampleRows <- is.element(IccTable[[IccDscdCol]],DscdsList)
 
     IccTable <- IccTable[IccSampleRows,]
-    Tables <- TableStored$get()    
+    Tables <- TableStored$Get()    
 	Tables$ICCsample <- IccTable
 	TableStored$setTable(Tables)
     
-    EventWdata <- ColPropList$get()$EVENTW$get()
+    EventWdata <- ColPropList$Get()$EVENTW$Get()
     nobs <- ((EventWdata$Far - EventWdata$Close+1)-EventWdata$Size+1)
 	test2 <- as.data.frame(matrix(rep(NA,(7+6*nobs)*laenge),nrow=laenge,ncol=7+6*nobs))
 	Icc_Prop_Charac_List_Set(TableStored, ColPropList) 
@@ -478,10 +441,10 @@ SumTab <- function(ColPropList,TableStored){
     Carrier$retrieveIcc(ColPropList, TableStored, Carrier, Sample=TRUE)
     Carrier$retrieveCompany(ColPropList, TableStored, Carrier)
 
-	test2[i,] <- c(as.character(Carrier$get()$SDC$Datum), Carrier$get()$SDC$AcquirorDscd, Carrier$get()$SDC$TargetDscd, 
-		Carrier$get()$SDC$ShareAc, Carrier$get()$SDC$SicAc , Carrier$get()$SDC$SicTa , NA,
-		Carrier$get()$ICC$TaIcc, Carrier$get()$ICC$AcIccPrae, Carrier$get()$ICC$AcIccPost,
-		Carrier$get()$COMPANY$TaMv, Carrier$get()$COMPANY$AcMvPrae, Carrier$get()$COMPANY$AcMvPost)	
+	test2[i,] <- c(as.character(Carrier$Get()$SDC$Datum), Carrier$Get()$SDC$AcquirorDscd, Carrier$Get()$SDC$TargetDscd, 
+		Carrier$Get()$SDC$ShareAc, Carrier$Get()$SDC$SicAc , Carrier$Get()$SDC$SicTa , NA,
+		Carrier$Get()$ICC$TaIcc, Carrier$Get()$ICC$AcIccPrae, Carrier$Get()$ICC$AcIccPost,
+		Carrier$Get()$COMPANY$TaMv, Carrier$Get()$COMPANY$AcMvPrae, Carrier$Get()$COMPANY$AcMvPost)	
 	}
     
 	IccColNames <- c(paste("TaIcc",-(nobs:1),sep="_"),paste("AcIccPrae",-(nobs:1),sep="_"),
