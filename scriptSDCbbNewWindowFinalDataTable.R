@@ -105,24 +105,25 @@ Company_Set <- function(DscdCol = "DSCD", CharacCol = "KPI",   ######hier noch p
 Event_W_set <- function(Close = 3, Far = 16, Size = 6, 
 				MinObs = 2)
 	{	
-	Get <- function()	list(Close = Close, Far = Far, 
-					Size =  Size, MinObs = MinObs)
 	
 	Extend_Fun(TableStored,ceiling(Far/12))
     
-    list(Close = Close, Far = Far, 
+    EventWdata <<- list(Close = Close, Far = Far, 
 					Size =  Size, MinObs = MinObs)
                     
-	setClose <- function(CloseVal) Close <<- CloseVal
-	setFar  <- function(FarVal,TableStore = TableStored) {Far <<- FarVal  ##TableStored fehler prüfen
-				Extend_Fun(TableStore,ceiling(FarVal/12))}
+    ##	Get <- function()	list(Close = Close, Far = Far, 
+	##				Size =  Size, MinObs = MinObs)                
+                    
+	##setClose <- function(CloseVal) Close <<- CloseVal
+	##setFar  <- function(FarVal,TableStore = TableStored) {Far <<- FarVal  ##TableStored fehler prüfen
+	##			Extend_Fun(TableStore,ceiling(FarVal/12))}
 	
-	setSize <- function(SizeVal) Size <<- SizeVal
-	setMinObs <- function(MinObsVal) MinObs <<- MinObsVal
+	##setSize <- function(SizeVal) Size <<- SizeVal
+	##setMinObs <- function(MinObsVal) MinObs <<- MinObsVal
 	
-	EventWdata <<- list(Get = Get, setClose = setClose, 
-			setFar = setFar, setSize = setSize,
-			setMinObs = setMinObs)
+	##EventWdata <<- list(Get = Get, setClose = setClose, 
+	##		setFar = setFar, setSize = setSize,
+	##		setMinObs = setMinObs)
 
 	##EventWdata <<- list(Start = Start, Last = Last, '########################################################
 	##		   Size = Size, MinObs = MinObs)
@@ -138,7 +139,7 @@ Extend_Fun <- function(TableStored = TableStored, years = 6){
 		time$mon <- time$mon+1:monthAdd
 		time<-substr(as.Date(time),1,7)
 		CompanyTable[,time] <- newRow
-        CompanyTable[,{time}:=newRow]       ##########################################
+        ##CompanyTable[,{time}:=newRow]       ##########################################
         
 		Tables <- TableStored$Get()
 		Tables$COMPANY <- CompanyTable
@@ -276,15 +277,15 @@ Event_W_Get <- function(Datum){
 	
 	Datum <- as.POSIXlt(Datum) 
 	Datum$mday <- 15
-	DatPost <- DatPrae <- rep(Datum,EventWProp$Get()$Far - EventWProp$Get()$Close+1)
+	DatPost <- DatPrae <- rep(Datum,EventWProp$Far - EventWProp$Close+1)
 		
-    ##DatPrae$mon <- DatPrae$mon-(EventWProp$Get()$Close:EventWProp$Get()$Far)          
-	DatPrae$mon <- DatPrae$mon-(EventWProp$Get()$Far:EventWProp$Get()$Close)    ##
-	DatPost$mon <- DatPost$mon+(EventWProp$Get()$Close:EventWProp$Get()$Far)
+    ##DatPrae$mon <- DatPrae$mon-(EventWProp$Close:EventWProp$Far)          
+	DatPrae$mon <- DatPrae$mon-(EventWProp$Far:EventWProp$Close)    ##
+	DatPost$mon <- DatPost$mon+(EventWProp$Close:EventWProp$Far)
 	DatPrae <- substr(as.Date(DatPrae),1,7)
 	DatPost <- substr(as.Date(DatPost),1,7)
-	MinObs <- EventWProp$Get()$MinObs
-	Size <- EventWProp$Get()$Size	
+	MinObs <- EventWProp$MinObs
+	Size <- EventWProp$Size	
 
 	list(DatPrae = DatPrae, DatPost = DatPost, MinObs = MinObs, Size = Size)
 	}
@@ -428,7 +429,7 @@ SumTab <- function(ColPropList,TableStored){
 	Tables$ICCsample <- IccTable
 	TableStored$setTable(Tables)
     
-    EventWdata <- ColPropList$Get()$EVENTW$Get()
+    EventWdata <- ColPropList$Get()$EVENTW
     nobs <- ((EventWdata$Far - EventWdata$Close+1)-EventWdata$Size+1)
 	test2 <- as.data.frame(matrix(rep(NA,(7+6*nobs)*laenge),nrow=laenge,ncol=7+6*nobs))
 	Icc_Prop_Charac_List_Set(TableStored, ColPropList) 
