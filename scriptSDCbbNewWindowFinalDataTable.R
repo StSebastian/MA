@@ -3,13 +3,13 @@ library(data.table)
 
 Read_Table<-function(){
 	setwd("C:/Users/Sebastian Stenzel/Desktop/Neuer Ordner (2)/R input test")
-    ##SdcTab <- read.csv("SDCtest.csv",sep=";",dec=".",colClasses=c("character", "numeric", "character", "character", "character", 
-	##						"character", "character", "character", "character", "character", "character", 
-	##						"character", "character", "numeric", "numeric"))
+    ##SdcTab <- read.csv("SDCtest.csv",sep=";",dec=".",colClasses=c("character", "numeric", "character", 
+    ##                "character", "character", "character", "character", "character", "character", 
+    ##                "character", "character", "character", "character", "numeric", "numeric"))
 	##SdcTab1 <- fread("SDCtest.csv")
-    SdcTab <- fread("SDCtest.csv",sep=";",colClasses=c("character", "numeric", "character", "character", "character", 
-							"character", "character", "character", "character", "character", "character", 
-							"character", "character", "numeric", "numeric"))
+    SdcTab <- fread("SDCtest.csv",sep=";",colClasses=c("character", "numeric", "character", "character",
+                            "character", "character", "character", "character", "character", "character", 
+                            "character", "character", "character", "numeric", "numeric"))
     
     ##write.table(test,"ICCSample.txt",sep=";",dec=",")
    
@@ -91,45 +91,7 @@ Read_Table<-function(){
 	}
 
 Read_Table()    
-    
-Sdc_Adjust <- function(TableStored,ColPropList){
-		
-		SdcTable <- TableStored$get()$SDC
-        IccTable <- TableStored$get()$ICC
-		ColNamesSdc <- c("SpDate","SpValueTrans","SpTaName","SpTaDscd","SpAcName",
-		"SpAcDscd","SpAcSic","SpAcInd","SpTaSic","SpTaInd","SpDateAnn",
-		"SpEqV","SpEpV","SpShAfterTra","SpShAcq")
-        setnames(SdcTable,names(SdcTable),ColNamesSdc )
 
-		##SdcTable$SpValueTrans <- as.numeric(SdcTable$SpValueTrans)
-		##SdcTable$SpEqV <- as.numeric(SdcTable$SpEqV)
-		##SdcTable$SpEpV <- as.numeric(SdcTable$SpEpV)
-        
-        SdcTable[,SpValueTrans:=as.numeric(SpValueTrans)]           ##
-		SdcTable[,SpEqV:=as.numeric(SpEqV)]                         ##          
-		SdcTable[,SpEpV:=as.numeric(SpEpV)]                         ##
-        
-
-		##SdcTable$SpDate <- as.Date(strptime(SdcTable$SpDate,"%m.%d.%Y"))
-		##SdcTable$SpDateAnn <- as.Date(strptime(SdcTable$SpDateAnn,"%m.%d.%Y"))
-		##SdcTable$SpShAfterTra <- SdcTable$SpShAfterTra/100
-		##SdcTable$SpShAcq <- SdcTable$SpShAcq/100
-
-        SdcTable[,SpDate:= as.Date(strptime(SpDate,"%m.%d.%Y"))]            ##
-		SdcTable[,SpDateAnn:= as.Date(strptime(SpDateAnn,"%m.%d.%Y"))]      ##
-		SdcTable[,SpShAfterTra:= SpShAfterTra/100]                          ##
-		SdcTable[,SpShAcq:= SpShAcq/100]                                    ##
-        
-        IccDatCol <- ColPropList$get()$ICC$DatCol                           ##
-        IccTable[,{IccDatCol}:=as.Date(strptime(IccTable[[IccDatCol]],"%Y-%m-%d"))]               ###### warum klappt die Auwahl nicht über eine variable 
-        
-		Tables <- TableStored$get()
-		Tables$SDC <- SdcTable
-        ##Tables$ICC <- IccTable                                              ##
-		TableStored$setTable(Tables)
-		}
-        
-Sdc_Adjust(TableStored,ColPropList)  
 
 
 Name_Comp_Table <- function(TableStored = TableStored, NChar = 5 , StartDate = "1978-01-01"){
@@ -292,7 +254,7 @@ Col_Prop <- function(){
 		setEventW <- function(...) if (length(list(...))==0){PropList$EVENTW <<- Event_W_set()}
 						else {PropList$EVENTW <<- Event_W_set(...)}
         
-        setStandard <- function(){
+        setDefault <- function(){
                         PropList$SDC <<- Sdc_Set()
                         PropList$ICC <<- Icc_Set()
                         PropList$COMPANY <<- Company_Set()
@@ -300,11 +262,52 @@ Col_Prop <- function(){
                         }
     
 		ColPropList <<- list(get = get, setSdc = setSdc, setICC = setIcc, setCompany = setCompany,
-					setEventW = setEventW, setStandard = setStandard)	
+					setEventW = setEventW, setDefault = setDefault)	
 		}
 
 Col_Prop()
-ColPropList$setStandard()
+ColPropList$setDefault()
+        
+    
+Sdc_Adjust <- function(TableStored,ColPropList){
+		
+		SdcTable <- TableStored$get()$SDC
+        IccTable <- TableStored$get()$ICC
+		ColNamesSdc <- c("SpDate","SpValueTrans","SpTaName","SpTaDscd","SpAcName",
+		"SpAcDscd","SpAcSic","SpAcInd","SpTaSic","SpTaInd","SpDateAnn",
+		"SpEqV","SpEpV","SpShAfterTra","SpShAcq")
+        setnames(SdcTable,names(SdcTable),ColNamesSdc )
+
+		##SdcTable$SpValueTrans <- as.numeric(SdcTable$SpValueTrans)
+		##SdcTable$SpEqV <- as.numeric(SdcTable$SpEqV)
+		##SdcTable$SpEpV <- as.numeric(SdcTable$SpEpV)
+        
+        SdcTable[,SpValueTrans:=as.numeric(SpValueTrans)]           ##
+		SdcTable[,SpEqV:=as.numeric(SpEqV)]                         ##          
+		SdcTable[,SpEpV:=as.numeric(SpEpV)]                         ##
+        
+
+		##SdcTable$SpDate <- as.Date(strptime(SdcTable$SpDate,"%m.%d.%Y"))
+		##SdcTable$SpDateAnn <- as.Date(strptime(SdcTable$SpDateAnn,"%m.%d.%Y"))
+		##SdcTable$SpShAfterTra <- SdcTable$SpShAfterTra/100
+		##SdcTable$SpShAcq <- SdcTable$SpShAcq/100
+
+        SdcTable[,SpDate:= as.Date(strptime(SpDate,"%m.%d.%Y"))]            ##
+		SdcTable[,SpDateAnn:= as.Date(strptime(SpDateAnn,"%m.%d.%Y"))]      ##
+		SdcTable[,SpShAfterTra:= SpShAfterTra/100]                          ##
+		SdcTable[,SpShAcq:= SpShAcq/100]                                    ##
+        
+        IccDatCol <- ColPropList$get()$ICC$DatCol                           ##
+        IccTable[,{IccDatCol}:=as.Date(strptime(IccTable[[IccDatCol]],"%Y-%m-%d"))]               ###### warum klappt die Auwahl nicht über eine variable 
+        
+		Tables <- TableStored$get()
+		Tables$SDC <- SdcTable
+        ##Tables$ICC <- IccTable                                              ##
+		TableStored$setTable(Tables)
+		}
+        
+Sdc_Adjust(TableStored,ColPropList)          
+        
         
 Icc_Conv_Date <- function(ColPropList, TableStored){
 
@@ -330,7 +333,7 @@ Icc_Conv_Date <- function(ColPropList, TableStored){
 Icc_Conv_Date(ColPropList, TableStored)
 
 
-ICC_Prop_Charac_List_Set <- function(TableStored = TableStored, ColPropList){
+Icc_Prop_Charac_List_Set <- function(TableStored = TableStored, ColPropList){
 		
 		CompanyTable <- TableStored$get()$COMPANY 
 		CompProp  <- ColPropList$get()$COMPANY
@@ -345,7 +348,7 @@ ICC_Prop_Charac_List_Set <- function(TableStored = TableStored, ColPropList){
         ColPropList$setCompany(CharacList = CharacMat)
 		}
         
-##ICC_Prop_Charac_List_Set(TableStored, ColPropList)        
+##Icc_Prop_Charac_List_Set(TableStored, ColPropList)        
 
 Sdc_Get <- function(ColPropList, TableStored, SDCRow,Carrier){
 	
@@ -362,8 +365,8 @@ Sdc_Get <- function(ColPropList, TableStored, SDCRow,Carrier){
 	Datum     <- SdcTable[[DatCol]][SDCRow]        ##
 
 
-	##MuaDat      <- Carrier$getEventW(Datum, TableStored) ## function will be explained next
-    Carrier$getEventW(Datum) ## function will be explained next
+	##MuaDat      <- Carrier$retrieveEventW(Datum, TableStored) ## function will be explained next
+    Carrier$retrieveEventW(Datum) ## function will be explained next
 
     
 	AcquirorDscd <- SdcTable[[AcquirorCol]][SDCRow]   ##
@@ -498,21 +501,21 @@ Comp_Get <- function(ColPropList, TableStored, Carrier){
 Data_Retrieve <- function(){
 
 	MaaData <- list(NULL)
-	getSdc <- function(...){MaaData$SDC <<- Sdc_Get(...)}
-	getIcc <- function(...){MaaData$ICC <<- Icc_Get(...)}
-	getCompany <- function(...){MaaData$COMPANY <<- Comp_Get(...)}
-	getEventW <- function(...){MaaData$EVENTW <<- Event_W_Get(...)}
+	retrieveSdc <- function(...){MaaData$SDC <<- Sdc_Get(...)}
+	retrieveIcc <- function(...){MaaData$ICC <<- Icc_Get(...)}
+	retrieveCompany <- function(...){MaaData$COMPANY <<- Comp_Get(...)}
+	retrieveEventW <- function(...){MaaData$EVENTW <<- Event_W_Get(...)}
 	get <- function()MaaData
 	
-	list(getSdc = getSdc, getIcc = getIcc, getCompany = getCompany, 
-		getEventW = getEventW, get = get)
+	list(retrieveSdc = retrieveSdc, retrieveIcc = retrieveIcc, retrieveCompany = retrieveCompany, 
+		retrieveEventW = retrieveEventW, get = get)
 	}
 
 ##Carrier <- Data_Retrieve()
 
-##Carrier$getSdc(ColPropList, TableStored,6,Carrier)
-##Carrier$getIcc(ColPropList, TableStored, Carrier)
-##Carrier$getCompany(ColPropList, TableStored, Carrier)
+##Carrier$retrieveSdc(ColPropList, TableStored,6,Carrier)
+##Carrier$retrieveIcc(ColPropList, TableStored, Carrier)
+##Carrier$retrieveCompany(ColPropList, TableStored, Carrier)
 ##Carrier$get()
 
 
@@ -544,20 +547,20 @@ SumTab <- function(ColPropList,TableStored){
     nobs <- ((EventWdata$Far - EventWdata$Close+1)-EventWdata$Size+1)
 	test2 <- as.data.frame(matrix(rep(NA,(7+6*nobs)*laenge),nrow=laenge,ncol=7+6*nobs))
 	##CharacAdd(COMPTab,COMPCol)
-	ICC_Prop_Charac_List_Set(TableStored, ColPropList) 
+	Icc_Prop_Charac_List_Set(TableStored, ColPropList) 
     
     Carrier <<- Data_Retrieve ()
     
     for (i in 1:laenge){ 
     ##Carrier <- DataRetrieve()
-    Carrier$getSdc(ColPropList, TableStored, i,Carrier)
-    Carrier$getIcc(ColPropList, TableStored, Carrier, Sample=TRUE)
-    Carrier$getCompany(ColPropList, TableStored, Carrier)
+    Carrier$retrieveSdc(ColPropList, TableStored, i,Carrier)
+    Carrier$retrieveIcc(ColPropList, TableStored, Carrier, Sample=TRUE)
+    Carrier$retrieveCompany(ColPropList, TableStored, Carrier)
     ##print(Carrier$get()$SDC$TargetDscd)
     
-    ##Carrier$getSdc(ColPropList, TableStored, 2,Carrier)
-    ##Carrier$getIcc(ColPropList, TableStored, Carrier)
-    ##Carrier$getCompany(ColPropList, TableStored, Carrier)
+    ##Carrier$retrieveSdc(ColPropList, TableStored, 2,Carrier)
+    ##Carrier$retrieveIcc(ColPropList, TableStored, Carrier)
+    ##Carrier$retrieveCompany(ColPropList, TableStored, Carrier)
     
 	##temp  <- SDCget(SDCCol,SDCTab,i,EventWset)
 	##temp2 <- ICCget(ICCCol,ICCTab,temp)
@@ -578,7 +581,9 @@ SumTab <- function(ColPropList,TableStored){
                     paste("AcMvPost",(1:nobs),sep="_"))
 
 	names(test2)<-c(names(ColPropList$get()$SDC),"SicSep",IccColNames,MvColNames)
-	test2[,c("ShareCol",IccColNames,MvColNames)]<-apply(test2[,c("ShareCol",IccColNames,MvColNames)],2,as.numeric)
+	##	names(test2)<-c("Acquiror_Dscd","Target_Dscd","Shares_Acquired_Perc","Acquiror_Sic","Target_Sic",
+    ##            "SicSep",IccColNames,MvColNames)
+    test2[,c("ShareCol",IccColNames,MvColNames)]<-apply(test2[,c("ShareCol",IccColNames,MvColNames)],2,as.numeric)
 	test2$SicSep <- SICSeparation(test2)
   
 	test2
