@@ -521,7 +521,7 @@ Data_Retrieve <- function(){
 
 ##SumTab <- function(ColPropList,TableStored,SDCTab,SDCCol,ICCTab,ICCCol,COMPTab,COMPCol,EventWset){
 SumTab <- function(ColPropList,TableStored){
-	laenge <- 1800
+	laenge <- 30
     ##ICCTab <- ICCTab[,as.character(ICCCol$get()[c("DatCol","DscdCol","IccCol")])]
     ##DSCDList <- c(SDCTab[1:laenge,c("SpTaDscd")],SDCTab[1:laenge,"SpAcDscd"])
     ##IccSampleRows <- is.element(ICCTab[,"Company_Code"],DSCDList)
@@ -537,11 +537,11 @@ SumTab <- function(ColPropList,TableStored){
     IccSampleRows <- is.element(IccTable[[IccDscdCol]],DscdsList)
 
     IccTable <- IccTable[IccSampleRows,]
-    TableStoredTemp <- TableStored      ## brauchst du den Schritt überhaupt
+    ##TableStoredTemp <- TableStored      ## brauchst du den Schritt überhaupt
     
-    Tables <- TableStoredTemp$get()    
+    Tables <- TableStored$get()    
 	Tables$ICCsample <- IccTable
-	TableStoredTemp$setTable(Tables)
+	TableStored$setTable(Tables)
     
     EventWdata <- ColPropList$get()$EVENTW$get()
     nobs <- ((EventWdata$Far - EventWdata$Close+1)-EventWdata$Size+1)
@@ -580,17 +580,18 @@ SumTab <- function(ColPropList,TableStored){
     MvColNames  <- c(paste("TaMv",-(nobs:1),sep="_"),paste("AcMvPrae",-(nobs:1),sep="_"),
                     paste("AcMvPost",(1:nobs),sep="_"))
 
-	names(test2)<-c(names(ColPropList$get()$SDC),"SicSep",IccColNames,MvColNames)
-	##	names(test2)<-c("Acquiror_Dscd","Target_Dscd","Shares_Acquired_Perc","Acquiror_Sic","Target_Sic",
-    ##            "SicSep",IccColNames,MvColNames)
-    test2[,c("ShareCol",IccColNames,MvColNames)]<-apply(test2[,c("ShareCol",IccColNames,MvColNames)],2,as.numeric)
+	##names(test2)<-c(names(ColPropList$get()$SDC),"SicSep",IccColNames,MvColNames)
+    names(test2)<-c("Date","Acquiror_Dscd","Target_Dscd","Perc_Shares_Acquired","Acquiror_Sic","Target_Sic",
+                "SicSep",IccColNames,MvColNames)
+    test2[,c("Perc_Shares_Acquired",IccColNames,MvColNames)]<-apply(test2[,c("Perc_Shares_Acquired",
+                IccColNames,MvColNames)],2,as.numeric)
 	test2$SicSep <- SICSeparation(test2)
   
 	test2
 	}
  
 
-SICSeparation <- function(SummarySdc, AcSicCol = "SicAcCol", TaSicCol = "SicTaCol")
+SICSeparation <- function(SummarySdc, AcSicCol = "Acquiror_Dscd", TaSicCol = "Target_Dscd")
 			{
 			Sic0 <- SummarySdc[, AcSicCol] == SummarySdc[, TaSicCol]
 			Sic1 <- substr(SummarySdc[, AcSicCol],1,1) != substr(SummarySdc[, TaSicCol],1,1)
