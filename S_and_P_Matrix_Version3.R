@@ -65,48 +65,69 @@ SaPMat <- SaPfill(SaPMat, SaPConst)
 ## the table will have the all the in SaPmat occuring Sics as colomnnames and list by use of 
 ## True and False values their belonging to the companies which are the rows 
 
-SicSep<-function(SicLevel,SicCol){SaPMat[SicCol]==SicLevel}
+##SicSep<-function(SicLevel,SicCol){SaPMat[SicCol]==SicLevel}
 
-SicFour <- sapply(levels(SaPMat$SIC_four), SicSep, SicCol = "SIC_four")
-SicThree <- sapply(levels(SaPMat$SIC_three), SicSep, SicCol = "SIC_three")
-SicTwo <- sapply(levels(SaPMat$SIC_two), SicSep, SicCol = "SIC_two")
-SicOne <- sapply(levels(SaPMat$SIC_one), SicSep, SicCol = "SIC_one")
+##SicFour <- sapply(levels(SaPMat$SIC_four), SicSep, SicCol = "SIC_four")
+##SicThree <- sapply(levels(SaPMat$SIC_three), SicSep, SicCol = "SIC_three")
+##SicTwo <- sapply(levels(SaPMat$SIC_two), SicSep, SicCol = "SIC_two")
+##SicOne <- sapply(levels(SaPMat$SIC_one), SicSep, SicCol = "SIC_one")
 
-SicPosList<-list(SicFour = SicFour, SicThree = SicThree, SicTwo = SicTwo, SicOne = SicOne ) 
+##SicPosList<-list(SicFour = SicFour, SicThree = SicThree, SicTwo = SicTwo, SicOne = SicOne ) 
 
 ##*****************************************************************
 
 ## removing NAs from SicPosList
 
-Sic.NaRm.Op <- function(Col,SicDig){
-SicPosList[[SicDig]][is.na(SicPosList[[SicDig]][,Col]),Col] <<- FALSE
-}
+##Sic.NaRm.Op <- function(Col,SicDig){
+##SicPosList[[SicDig]][is.na(SicPosList[[SicDig]][,Col]),Col] <<- FALSE
+##}
 
-Sic.NaRm <- function(SicDig){
-	
-	for (i in 1:ncol(SicPosList[[SicDig]])){Sic.NaRm.Op(i,SicDig)}
-	}
+##Sic.NaRm <- function(SicDig){
+##	
+##	for (i in 1:ncol(SicPosList[[SicDig]])){Sic.NaRm.Op(i,SicDig)}
+##	}
 
-Sic.NaRm("SicOne"); Sic.NaRm("SicTwo"); Sic.NaRm("SicThree"); Sic.NaRm("SicFour")	
+##Sic.NaRm("SicOne"); Sic.NaRm("SicTwo"); Sic.NaRm("SicThree"); Sic.NaRm("SicFour")	
 
 ##********************************************************************
 
 ## creates an empty data frame which has dates as columns and Sics as rows depending on "SicFour","SicThree","SicTwo","SicOne"
 ## It should later be filled with the number of member companies to the S&P 1500 grouped by the same Sics
 
-ColVec<-sort(unique(SaPConst$Datum),decreasing=F)
+##ColVec<-sort(unique(SaPConst$Datum),decreasing=F)
 
-SicCreate <- function(SicDig){
-	Col.SicDig <- SicPosList[[SicDig]]
-	ColVec<-sort(unique(SaPConst$Datum),decreasing=F)
+##SicCreate <- function(SicDig){
+##	Col.SicDig <- SicPosList[[SicDig]]
+##	ColVec<-sort(unique(SaPConst$Datum),decreasing=F)
+##    
+##	Matrix <- matrix(numeric(ncol(Col.SicDig)*(length(ColVec)+1)),nrow=ncol(Col.SicDig),ncol=(length(ColVec)+1))
+##	colnames(Matrix)<-c("Sic",ColVec)
+##	Matrix <- as.data.frame(Matrix)
+##	Matrix[,1]<-colnames(Col.SicDig)
+##	##Matrix <- cbind(colnames(Col.SicDig),Matrix)
+##	Matrix
+##	}
+ 
+##SicList3 <- sapply(c("SicFour","SicThree","SicTwo","SicOne"),SicCreate,simplify=F,USE.NAMES = TRUE)
+ 
+
     
-	Matrix <- matrix(numeric(ncol(Col.SicDig)*(length(ColVec)+1)),nrow=ncol(Col.SicDig),ncol=(length(ColVec)+1))
+ SicCreate <- function(SicDig){
+    if(SicDig=="SicFour"){SicDig <- "SIC_four"}
+    else if(SicDig=="SicThree"){SicDig <- "SIC_three"}
+    else if(SicDig=="SicTwo"){SicDig <- "SIC_two"}
+    else if(SicDig=="SicOne"){SicDig <- "SIC_one"}
+	##Col.SicDig <- SicPosList[[SicDig]]
+	Col.SicDig <- levels(SaPMat[,SicDig])
+    ColVec<-sort(unique(SaPConst$Datum),decreasing=F)
+    
+	Matrix <- matrix(numeric(length(Col.SicDig)*(length(ColVec)+1)),nrow=length(Col.SicDig),ncol=(length(ColVec)+1))
 	colnames(Matrix)<-c("Sic",ColVec)
 	Matrix <- as.data.frame(Matrix)
-	Matrix[,1]<-colnames(Col.SicDig)
+	Matrix[,1]<-Col.SicDig
 	##Matrix <- cbind(colnames(Col.SicDig),Matrix)
 	Matrix
-	}
+	}   
     
 
 ##************************************************************************
@@ -174,29 +195,49 @@ CalcCharVal <- function(Sic, SapDataTab, SapMat, Datum, ObsReq){ ##SapMat ist Sa
 
 
 TsSicCalc <- function(SapDataTab = SapData, SapSetOb = SapSet, CompChar = "MV", SapMat = SaPMat, ObsReq = 5){
+   
+   
+    SapDataTab<- merge(SapMat[,c("DSCD","SIC_four")],SapDataTab,by.x="DSCD",by.y="DSCD",all=T,sort=F)
+   
 	CharCol <- SapSetOb$CharCol
     CharLevel <- unique(as.character(SapData[,CharCol]))
-    temp <- merge(SapMat[,c("DSCD","SIC_four")],
-			SapDataTab,by.x="DSCD",by.y="DSCD",all=T,sort=F)  ##hier prüfen ob das mit dem unterschiedlichen typen factor und variablen kollidiert
-    SapDataTab <- temp
-    rm(temp)
-	SapDataTab<-SapDataTab[order(SapDataTab$DSCD),]
-    SapDataTab<-SapDataTab[order(match(SapDataTab$KPI,CharLevel)),]
+    
+    SapDataTab <- sapply(CharLevel,FUN=function(x){y<-SapDataTab[CharCol]==x;y=SapDataTab[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE)
+    
+    
+    ##AddSicNumber <- function (SapDataElement){
+    ##  SapDataElement<- merge(SaPMat[,c("DSCD","SIC_four")],SapDataElement,by.x="DSCD",by.y="DSCD",all=T,sort=F) 
+    ##        SapDataElement <- SapDataElement [order(SapDataElement$DSCD),]
+    ##    }
+    
+
+    
+        
+    ##SapDataTab <- lapply(SapDataTab,AddSicNumber)
+   
+   ##lapply(CharLevel,FUN=function(x){y<-SapDataTab[CharCol]==x;SapDataTab[y,]})
+
+    ### temp <- merge(SapMat[,c("DSCD","SIC_four")],
+	##		SapDataTab,by.x="DSCD",by.y="DSCD",all=T,sort=F)  ##hier prüfen ob das mit dem unterschiedlichen typen factor und variablen kollidiert
+    ##SapDataTab <- temp
+    ## rm(temp)
+	##SapDataTab<-SapDataTab[order(SapDataTab$DSCD),]
+    ##SapDataTab<-SapDataTab[order(match(SapDataTab$KPI,CharLevel)),]
     ##SapDataTab<-SapDataTab[order(match(SapDataTab$KPI,names(SapSetOb$CharRows))),]
         ##vll doch besser das ganze gleich in eine liste aufzuteilen(nach den KPI)
     
-    SapSetOb$CharRows <- CharRowsSet()
+    ##SapSetOb$CharRows <- CharRowsSet()
     
-    CharRows <- SapSetOb$CharRows
+    ##CharRows <- SapSetOb$CharRows
 	##SicCol <- SapSetOb$
-	SapDataTab <- SapDataTab[CharRows[[CompChar]], ] ##Sowohl die Entfernung der CharRows als auch der Sic Colums kannst du eine Ebene/funktion vorher machen
+	SapDataTab <- SapDataTab[[CompChar]] ##Sowohl die Entfernung der CharRows als auch der Sic Colums kannst du eine Ebene/funktion vorher machen
 	DscdCol <- SapSetOb$DscdCol
 	##SicRm <- SapDataTab[,SicCol]== Sic 
 	##SapDataTab <- SapDataTab[SicRm, ]
 
     
     SapDataTab <- SapDataTab[!is.na(SapDataTab[,"SIC_four"]),]
-
+    
 	SicList <- sapply(c("SicFour","SicThree","SicTwo","SicOne"),SicCreate,simplify=F,USE.NAMES = TRUE)
 	##i <- 3
 	for(i in seq(along = SicList)){
