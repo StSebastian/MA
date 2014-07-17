@@ -1,6 +1,6 @@
 setwd("C:/Users/Sebastian Stenzel/Desktop/Neuer Ordner (2)/R input test")
 
-SaPConst <- read.csv("S&Pverlauf_für_R.csv",sep=";",dec=".",colClasses=c("character", "character","character","numeric","character"))
+SaPConst <- read.csv("S&Pverlauf_fÃ¼r_R.csv",sep=";",dec=".",colClasses=c("character", "character","character","numeric","character"))
 
 SaPConst$Datum <- as.Date(SaPConst$Datum)
 SaPConst$Datum <- substr(SaPConst$Datum,1,7)
@@ -58,6 +58,7 @@ SaPMat <- SaPcreate(SaPConst)
 
 SaPMat <- SaPfill(SaPMat, SaPConst)
 
+
 ##*****************************************************************
 
 ## next goal is to compute a list of four data frame each for a 1,2,3,and 4 Sic digit table
@@ -106,68 +107,7 @@ SicCreate <- function(SicDig){
 	##Matrix <- cbind(colnames(Col.SicDig),Matrix)
 	Matrix
 	}
-
-SicList <- sapply(c("SicFour","SicThree","SicTwo","SicOne"),SicCreate,simplify=F,USE.NAMES = TRUE)
-
-##********************************************************************
-
-## takes one data frame of the list SicList and fills it with the sum of companies which are grouped by Sic Codes
-## and member of the S&P 1500 at a certain date
-
-Sic.Count.Op <- function(x,ListEle, BoMat){
-SicList[[ListEle]][x,-1]<<-colSums(SaPMat[BoMat[,x],-c(1:5)]) ## x is the index which rolls through the columns, 
-## which seperates the different Sics (for example 0,1,2,3,4,5,6,7,8,9 for SicOne)
-## BoMat tells R where the companies of the current Sic of interest  are located in the SaPMat, so that only
-## these rows are selected in SaPMat. Since SaPMat give information about the membership of Companies in the 
-## SaP 1500 by means of True and False values for each date. Hence taking the colsums of the modified SaPMat 
-## returns a vector which gives the number of companies belonging to a Sic of interest and are member of the 
-## S&P 1500 at a certain date
-}
-
-## controlls the index x for Sic.Count.Op
-
-Sic.Count <- function(ListEle, BoMat){
-	temp<-sapply(1:ncol(BoMat),Sic.Count.Op,BoMat = BoMat, ListEle = ListEle) ## vll colnames als index anstelle der zahl
-	rm(temp)}
-
-Sic.Count("SicOne",SicPosList$SicOne); Sic.Count("SicTwo",SicPosList$SicTwo)
-Sic.Count("SicThree",SicPosList$SicThree); Sic.Count("SicFour",SicPosList$SicFour)
-
-#*************************************************************************
-
-MinObsRm <- function(SicList,MinObs){
-        f <- 1    
-        for (i in SicList){
-        ##i<-SicList[[1]]
-        tef<-sapply(1:nrow(i),function(x){any(i[x,-1]>=MinObs)})
-        SicList[[f]]<-SicList[[f]][tef,]
-        f<- f+1
-        }
-    SicList
-    }
-
-##***************************************************
-
-CalcTSobs <- function(SicList,MinObs){
-        f <- 1    
-        for (i in SicList){
-        ##i<-SicList[[1]]
-        rownames(i)<-i[,1]
-        Index<-colnames(i[,-1])
-        Sics<-i[,1]
-        i<-as.zoo(t(i[,-1]))
-        index(i)<-Index
-        b <- rollapply(data=i,width=10,FUN=function(x)(all(x>=MinObs)),align="right")
-      
-        b<-as.data.frame(t(b))
-         b<-cbind(Sics, b)
-        SicList[[f]]<-b
-        ##tef<-sapply(1:nrow(i),function(x){any(i[x,-1]>=MinObs)})
-        ##SicList[[f]]<-SicList[[f]][tef,]
-        f<- f+1
-        }
-    SicList
-    }
+    
 
 ##************************************************************************
 
@@ -198,15 +138,51 @@ CharRowsSet <- function(SapDataTab = SapData, SapSetOb = SapSet){
 ##SapSet$CharRows <- CharRowsSet()
 
 
+
+TsSicElCalc <- function(SicListEl,SapDataTab,DscdCol,SaPMat,ObsReq){
+		for(i in seq(along=colnames(SicListEl[,-1]))){
+			Datum <- colnames(SicListEl)[i+1]
+			DscdRm <- SapDataTab[,DscdCol] %in% SaPMat[SaPMat[,Datum],"DSCD"]
+			SapDataTab2 <- SapDataTab[DscdRm, ]
+			##CharVal <- CalcCharVal(SapDataTab2, Sic, SapMat, Datum, ObsReq)
+			CharVal <- sapply(SicListEl[,"Sic"],CalcCharVal, SapDataTab = SapDataTab2, SapMat = SaPMat, Datum = Datum, ObsReq = ObsReq)
+			SicListEl[,Datum] <- CharVal
+		}
+		SicListEl
+		}
+
+
+CalcCharVal <- function(Sic, SapDataTab, SapMat, Datum, ObsReq){ ##SapMat ist SaPMat sollte aber spÃ¤ter SaP Composition heiÃŸen also SapComp
+	##CharRows <- SapSetOb$CharRows
+	##DscdCol <- SapSetOb$DscdDCol
+	##SicCol <- SapSetOb$  ##hier noch einfÃ¼gen
+	
+	##SapDataTab <- SapDataTab[CharRows[[CompChar]], ] ##Sowohl die Entfernung der CharRows als auch der Sic Colums kannst du eine Ebene/funktion vorher machen
+	SicRm <- SapDataTab[,"SIC"]== Sic 
+	##SapDataTab <- SapDataTab[SicRm, ]
+	##DscdRm <- SapDataTab[,DscdCol] %in% SapMat[SapMat[,Datum],]
+	##SapDataTab <- SapDataTab[DscdRm, ]
+	CharVal <- SapDataTab[SicRm,Datum]
+	CharVal <- CharVal[CharVal != 0]
+    CharVal <- CharVal[!is.na(CharVal)]
+    ## CharVal <- CharVal[CharVal != 0 | is.na(CharVal)] ##besser musst noch hinzufÃ¼gen
+	if(length(CharVal) >= ObsReq){CharVal <- mean(CharVal, na.rm = T)
+	}else {CharVal <- NA}
+
+	CharVal
+	}
+
+
 TsSicCalc <- function(SapDataTab = SapData, SapSetOb = SapSet, CompChar = "MV", SapMat = SaPMat, ObsReq = 5){
 	CharCol <- SapSetOb$CharCol
     CharLevel <- unique(as.character(SapData[,CharCol]))
     temp <- merge(SapMat[,c("DSCD","SIC_four")],
-			SapDataTab,by.x="DSCD",by.y="DSCD",all=T,sort=F)  ##hier prüfen ob das mit dem unterschiedlichen typen factor und variablen kollidiert
+			SapDataTab,by.x="DSCD",by.y="DSCD",all=T,sort=F)  ##hier prÃ¼fen ob das mit dem unterschiedlichen typen factor und variablen kollidiert
     SapDataTab <- temp
     rm(temp)
 	SapDataTab<-SapDataTab[order(SapDataTab$DSCD),]
     SapDataTab<-SapDataTab[order(match(SapDataTab$KPI,CharLevel)),]
+    ##SapDataTab<-SapDataTab[order(match(SapDataTab$KPI,names(SapSetOb$CharRows))),]
         ##vll doch besser das ganze gleich in eine liste aufzuteilen(nach den KPI)
     
     SapSetOb$CharRows <- CharRowsSet()
@@ -254,90 +230,3 @@ TsSicCalc <- function(SapDataTab = SapData, SapSetOb = SapSet, CompChar = "MV", 
  
     
     
-
-TsSicElCalc <- function(SicListEl,SapDataTab,DscdCol,SaPMat,ObsReq){
-		for(i in seq(along=colnames(SicListEl[,-1]))){
-			Datum <- colnames(SicListEl)[i+1]
-			DscdRm <- SapDataTab[,DscdCol] %in% SaPMat[SaPMat[,Datum],"DSCD"]
-			SapDataTab2 <- SapDataTab[DscdRm, ]
-			##CharVal <- CalcCharVal(SapDataTab2, Sic, SapMat, Datum, ObsReq)
-			CharVal <- sapply(SicListEl[,"Sic"],CalcCharVal, SapDataTab = SapDataTab2, SapMat = SaPMat, Datum = Datum, ObsReq = ObsReq)
-			SicListEl[,Datum] <- CharVal
-		}
-		SicListEl
-		}
-
-
-CalcCharVal <- function(Sic, SapDataTab, SapMat, Datum, ObsReq){ ##SapMat ist SaPMat sollte aber später SaP Composition heißen also SapComp
-	##CharRows <- SapSetOb$CharRows
-	##DscdCol <- SapSetOb$DscdDCol
-	##SicCol <- SapSetOb$  ##hier noch einfügen
-	
-	##SapDataTab <- SapDataTab[CharRows[[CompChar]], ] ##Sowohl die Entfernung der CharRows als auch der Sic Colums kannst du eine Ebene/funktion vorher machen
-	SicRm <- SapDataTab[,"SIC"]== Sic 
-	##SapDataTab <- SapDataTab[SicRm, ]
-	##DscdRm <- SapDataTab[,DscdCol] %in% SapMat[SapMat[,Datum],]
-	##SapDataTab <- SapDataTab[DscdRm, ]
-	CharVal <- SapDataTab[SicRm,Datum]
-	CharVal <- CharVal[CharVal != 0]
-    CharVal <- CharVal[!is.na(CharVal)]
-    ## CharVal <- CharVal[CharVal != 0 | is.na(CharVal)] ##besser musst noch hinzufügen
-	if(length(CharVal) >= ObsReq){CharVal <- mean(CharVal, na.rm = T)
-	}else {CharVal <- NA}
-
-	CharVal
-	}
-
-    
-SicListEl5<-SicListEl
-
-rollapply(SicListEl5[,"Sic"],FUN=CalcCharVal,SapDataTab = SapDataTab2, SapMat = SaPMat, Datum = Datum, ObsReq = ObsReq,width=1)
-	
-	rollapply
-	f<-as.zoo(data.frame(rep(1,9),rep(1,9),1:9))
-	rollapply(f,FUN=mean,width=1,align="right",by.column=F)
-	rollapply(f,FUN=function(x){if(x==1)TRUE},width=1,align="right",by.column=T)
-	rollapply(f,FUN=mean,width=2,align="right",by.column=T)
-	f<-as.zoo(data.frame(rep(1,9),rep(1,9),1:9,rep("a",9)))
-	rollapply(f[,-4],FUN=function(x){if(x==1)TRUE},width=1,align="right",by.column=T)
-	
-	f<-as.zoo(data.frame(rep(1,9),rep(1,9),1:9))
-	t(apply(f,1,function(x){rollapply(x,FUN=mean,width=2,align="left",by.column=T)}))
-	t(rollapply(t(f),FUN=mean,width=2,align="left",by.column=T))	 
-	
-a<-merge(SaPMat[,c("DSCD","SIC_four","SIC_three","SIC_two","SIC_one")],SapData,by.x="DSCD",by.y="DSCD",all=T,sort=F)
-a<-a[order(a[,"KPI"]),]
-
-system.time(for (i in 1:nrow(SicListEl5)){SicListEl5[i,Datum]<-CalcCharVal(SicListEl5[i,1],SapDataTab = SapDataTab2, SapMat = SaPMat, Datum = Datum, ObsReq = ObsReq)})
-system.time(a<-rollapply(SicListEl5[,"Sic"],FUN=CalcCharVal,SapDataTab = SapDataTab2, SapMat = SaPMat, Datum = Datum, ObsReq = ObsReq,width=1))
-system.time(CharVal <- sapply(SicListEl5[,"Sic"],CalcCharVal, SapDataTab = SapDataTab2, SapMat = SaPMat, Datum = Datum, ObsReq = ObsReq))
-
-SicListEl <- SicList[[4]]
-system.time(g<-TsSicElCalc(SicListEl,SapDataTab1,DscdCol,SaPMat,ObsReq) )
-system.time(f<-TsSicCalc(SapData,SapSet,"MV",SaPMat,5))
-
-
-x <- c(2, 2, 3, 4, 1, 4, 4, 3, 3)
-y <- c(4, 2, 1, 3)
-
-y[sort(order(y)[x])]
-
-a<-matrix(rep(0,5*20),nrow=5,ncol=20)
-a[1,]<-c(1,1,2,1,4,5,2,6,6,6,6,3,2,4,1,5,5,5,5,4)
-a[2,]<-4+c(1,1,2,1,4,5,2,6,6,6,6,3,2,4,1,5,5,5,5,4)
-a[2,]<-1+c(1,1,2,1,4,5,2,6,6,6,6,3,2,4,1,5,5,5,5,4)
-a[3,]<-4+c(1,1,2,1,4,5,2,6,6,6,6,3,2,4,1,5,5,5,5,4)
-a[4,]<-a[3,]/2
-a[5,]<-3*a[1,]
-rollapply(data=a,width=3,FUN=function(x)(all(x>=MinObs)))
-
- class(t(rollapply(data=t(a),width=3,FUN=function(x)(all(x>=3)),align="right")))
- b<-as.zoo(t(a))
- index(b)<-paste("a",1:20,sep="")
-(t(rollapply(data=(b),width=3,FUN=function(x)(all(x>=3)),align="right")))
-
-dd<-as.POSIXlt("2013-10-01")
-dd$mon<-dd$mon+1:20
-dd<-substr(as.Date(dd),1,7)
-index(b)<-dd
-rollapply(data=(b),width=3,FUN=function(x)(all(x>=3)),align="right"
