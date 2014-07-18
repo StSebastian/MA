@@ -61,7 +61,7 @@ SaPMat <- SaPfill(SaPMat, SaPConst)
 
 ##*****************************************************************
 
-## next goal is to compute a list of four data frame each for a 1,2,3,and 4 Sic digit table
+## next goal is to compute a list of four data frame for 1-,2-,3-,and 4-Sic-digit long tables.
 ## the table will have the all the in SaPmat occuring Sics as colomnnames and list by use of 
 ## True and False values their belonging to the companies which are the rows 
 
@@ -267,7 +267,177 @@ TsSicCalc <- function(SapDataTab = SapData, SapSetOb = SapSet, CompChar = "MV", 
 	SicList
 	}
 
-   system.time(a<-TsSicCalc(SapDataTab = SapData, SapSetOb = SapSet, CompChar = "MV", SapMat = SaPMat, ObsReq = 5))
+   system.time(abb<-TsSicCalc(SapDataTab = SapData, SapSetOb = SapSet, CompChar = "MV", SapMat = SaPMat, ObsReq = 5))
  
+ 
+AddCorCol <- function(SumTable,ColObject,CompProp){
+        CorVector <- rep(NA,nrow(SumTable))
+        for(i_row in 1:nrow(SumTable)){
+            CorVector[i_row] <- CalcIndustryCor(SumTable[i_row,"SicAcquiror"],SumTable[i_row,"SicTarget"],SumTable[i_row,"Date"],CompProp)
+            }
+        CorVector            
+        }
+        
+  
+CalcIndustryCor <- function(SicAcquiror,SicTarget,Date,CompProp){
+        TimePeriod <- 10     ##     das irgendwie vorher definieren
+        Date <- as.POISXlt(Date)
+        Date$years <- Date$years - (TimePeriod:1)  ## prüfen ob das mit der rheihenfolge passt
+        AcIndustryTs <- CalcIndustryTs(Date,SicAcquiror,SicDigits=1)  ## das mit 1 ist noch nicht gut --> verwirrden
+        TaIndustryTs <- CalcIndustryTs(Date,SicTarget,SicDigits=1)    ## das mit 1 ist noch nicht gut --> verwirrden
+        if(any(is.na(AcIndustryTs,TaIndustryTs){return(NA)}
+        #### hier noch die regression mit dem Marktindex einfügen
+        cor(rowMeans(AcIndustryTs),RowMeans(TaIndustryTs))
+        }
+        
+CalcIndustryTs <- function(Date,Sic,SicDigits){
+        NoObsReq = 10        ## das irgendwie vorher definieren   
+        NoCompReq = 10       ## das irgendwie vorher definieren
+        if(x>4){return(NA)}  ## das mit 1 ist noch nicht gut --> verwirrden
+        Table <- Table[[x]][,Sic]   ######### hier noch richtige liste auswähleen
+        ##if(sum(Table)<=10){return((Date,Sic,x+1))}
+        IndustryTs <- Table[Bo,Date]
+        ##SuffObs <- rowSums(!is.na(IndustryTs))>=10
+        ##IndustryTs <- IndustryTs(SuffObs,)
+        if(sum(rowSums(!is.na(IndustryTs))>=NoObsReq)>=NoCompReq){          ## test whether there are too less observations per company or to less companies for the industry
+            return(IndustryTs[rowSums(!is.na(IndustryTs))>=NoObsReq,])}     ## returns only those companies with enough observations
+        else {CalcIndustryTs(Date,Sic,SicDigits+1)}                         ## if "if"-check fails same function is called searching Sic-table with one Sic digit more
+        }        
+        
+
+##*****************************************************************
+
+## next goal is to compute a list of four data frame for 1-,2-,3-,and 4-Sic-digit long tables.
+## the table will have the all the in SaPmat occuring Sics as colomnnames and list by use of 
+## True and False values their belonging to the companies which are the rows 
+
+SicSep<-function(SicLevel,SicCol){SaPMat[SicCol]==SicLevel}
+
+SicFour <- sapply(levels(SaPMat$SIC_four), SicSep, SicCol = "SIC_four")
+SicThree <- sapply(levels(SaPMat$SIC_three), SicSep, SicCol = "SIC_three")
+SicTwo <- sapply(levels(SaPMat$SIC_two), SicSep, SicCol = "SIC_two")
+SicOne <- sapply(levels(SaPMat$SIC_one), SicSep, SicCol = "SIC_one")
+
+SicPosList<-list(SicFour = SicFour, SicThree = SicThree, SicTwo = SicTwo, SicOne = SicOne ) 
+
+##*****************************************************************   
+
+SapMatConv<-function(SaPMat){
+        for (i_col in 6:ncol(SaPMat)){
+            temp <- SaPMat[,i_col]
+            temp[temp] <- SaPMat[temp,"DSCD"]
+            SaPMat[,i_col] <- temp
+            }
+        SaPMatDscd <<- SaPMat  
+        }
+            
+Read_SapData <- function(SapMat=SaPMat,CompPropCol="KPI"){        
+        SapData <- read.csv("S&Pkons.csv",sep=";",dec=".")
+        Dates <- as.Date(substring(colnames(SapData[,-c(1:3)]),2,11),"%Y.%m.%d")
+        ColNames <- c(colnames(SapData[,1:3]),substring(Dates,1,7))
+        colnames(SapData) <- ColNames        
+
+        CharLevel <- unique(as.character(SapData[,CompPropCol]))
+        
+        SapData<- merge(SapMat[,c("DSCD","SIC_four")],SapData,by.x="DSCD",by.y="DSCD",all=T,sort=F)
+         
+        SapData <- sapply(CharLevel,FUN=function(x){y<-SapData[CompPropCol]==x;y=SapData[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE) 
+        SapData <<- SapData
+        }
+
+Read_SapData()
+        
+##erg<-function(SapData = SapData2,SaPMat){
+##        
+##        SapDataBoolean <- sapply(names(SapData),function(x){},simplify=F,USE.NAMES = TRUE)
+##        for(i_table in 1:length(SapData)){
+##       rownames(SaPMat)<-SaPMat[,"DSCD"]
+##        SapDataBoolean[[i_table]]<-SaPMat[SapData[[i_table]][,"DSCD"],]
+##        }
+##        SapDataBoolean
+##        }
+
+Compute_SapDataBoolean<-function(SapData = SapData,SaPMat){         ## hier nochdeoppelte Benennung
+        
+        SapDataBoolean <- sapply(names(SapData),function(x){x},simplify=F,USE.NAMES = TRUE)
+        for(i_table in SapDataBoolean){
+        rownames(SaPMat)<-SaPMat[,"DSCD"]
+        SapDataBoolean[[i_table]]<-SaPMat[SapData[[i_table]][,"DSCD"],]
+        }
+        SapDataBoolean
+        }        
+        
+        
+a<-"TA";summary(SapData2[[a]][,"DSCD"]==fef[[a]][,"DSCD"])
+      
+        
+TsSicCalc <- function(SapDataTab = SapData2, SapSetOb = SapSet, CompChar = "MV", SapMat = SaPMat, ObsReq = 5){
+   
+   	CharCol <- SapSetOb$CharCol
+   
+    ##AddSicNumber <- function (SapDataElement){
+    ##  SapDataElement<- merge(SaPMat[,c("DSCD","SIC_four")],SapDataElement,by.x="DSCD",by.y="DSCD",all=T,sort=F) 
+    ##        SapDataElement <- SapDataElement [order(SapDataElement$DSCD),]
+    ##    }
     
+
     
+        
+    ##SapDataTab <- lapply(SapDataTab,AddSicNumber)
+   
+   ##lapply(CharLevel,FUN=function(x){y<-SapDataTab[CharCol]==x;SapDataTab[y,]})
+
+    ### temp <- merge(SapMat[,c("DSCD","SIC_four")],
+	##		SapDataTab,by.x="DSCD",by.y="DSCD",all=T,sort=F)  ##hier prüfen ob das mit dem unterschiedlichen typen factor und variablen kollidiert
+    ##SapDataTab <- temp
+    ## rm(temp)
+	##SapDataTab<-SapDataTab[order(SapDataTab$DSCD),]
+    ##SapDataTab<-SapDataTab[order(match(SapDataTab$KPI,CharLevel)),]
+    ##SapDataTab<-SapDataTab[order(match(SapDataTab$KPI,names(SapSetOb$CharRows))),]
+        ##vll doch besser das ganze gleich in eine liste aufzuteilen(nach den KPI)
+    
+    ##SapSetOb$CharRows <- CharRowsSet()
+    
+    ##CharRows <- SapSetOb$CharRows
+	##SicCol <- SapSetOb$
+	SapDataTab <- SapDataTab[[CompChar]] ##Sowohl die Entfernung der CharRows als auch der Sic Colums kannst du eine Ebene/funktion vorher machen
+	DscdCol <- SapSetOb$DscdCol
+	##SicRm <- SapDataTab[,SicCol]== Sic 
+	##SapDataTab <- SapDataTab[SicRm, ]
+
+    
+    SapDataTab <- SapDataTab[!is.na(SapDataTab[,"SIC_four"]),]
+    
+	SicList <- sapply(c("SicFour","SicThree","SicTwo","SicOne"),SicCreate,simplify=F,USE.NAMES = TRUE)
+	##i <- 3
+	for(i in seq(along = SicList)){
+	SicListEl <- SicList[[i]]
+        #####SicListEl <- SicList[[1]] #####
+		SicLength <- nchar(SicListEl[1,"Sic"])
+		##if(SicLength==1){SicCol="SIC_one"}
+		##if(SicLength==2){SicCol="SIC_two"}
+		##if(SicLength==3){SicCol="SIC_three"}
+		##if(SicLength==4){SicCol="SIC_four"}
+		
+		SapDataTab[,"SIC"] <- substring(SapDataTab[,"SIC_four"],1,SicLength)	##Sic Col noch definieren	
+		
+		SicListEl <- TsSicElCalc(SicListEl,SapDataTab,DscdCol,SapMat,ObsReq)
+
+		##for(i in seq(along=colnames(SicListEl[,-1]))){
+		##	Datum <- colnames(SicListEl)[i+1]
+		##	DscdRm <- SapDataTab[,DscdCol] %in% SaPMat[SaPMat[,Datum],"DSCD"]
+		##	SapDataTab2 <- SapDataTab[DscdRm, ]
+		##	##CharVal <- CalcCharVal(SapDataTab2, Sic, SapMat, Datum, ObsReq)
+		##	CharVal <- sapply(SicListEl[,"Sic"],CalcCharVal, SapDataTab = SapDataTab2, SapMat = SaPMat, Datum = Datum, ObsReq = ObsReq)
+		##	SicListEl[,Datum] <- CharVal
+		##	}
+		SicList[[i]] <- SicListEl
+        ######SicList[[4]] <- SicListEl #####
+		}
+	SicList
+	}
+        
+  system.time(abb<-TsSicCalc(SapDataTab = SapData2, SapSetOb = SapSet, CompChar = "MV", SapMat = SaPMat, ObsReq = 5))
+         
+
+     
