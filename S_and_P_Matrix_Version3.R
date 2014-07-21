@@ -36,6 +36,16 @@ SaPcreate <- function(SaPConst = SaPConst){
 	SaPMat
 	}
 
+
+SapMatConv<-function(SaPMat){
+        for (i_col in 6:ncol(SaPMat)){
+            temp <- SaPMat[,i_col]
+            temp[temp] <- SaPMat[temp,"DSCD"]
+            SaPMat[,i_col] <- temp
+            }
+        SaPMatDscd <<- SaPMat  
+        }        
+            
     
 ## fills SaPMat with TRUE and FALSE values according to their membership in the S&P 1500    
     
@@ -147,6 +157,8 @@ Sap_Set <- function(DscdCol = "DSCD", CharCol = "KPI", OneSicCol = NULL, TwoSicC
 	}
 
 SapSet<-Sap_Set()
+
+## adds T/F list to SapSet, the list gives information in which columns of SapData which KPI can be found
 
 CharRowsSet <- function(SapDataTab = SapData, SapSetOb = SapSet){
 	CharCol <- SapSetOb$CharCol
@@ -269,6 +281,9 @@ TsSicCalc <- function(SapDataTab = SapData, SapSetOb = SapSet, CompChar = "MV", 
 
    system.time(abb<-TsSicCalc(SapDataTab = SapData, SapSetOb = SapSet, CompChar = "MV", SapMat = SaPMat, ObsReq = 5))
  
+### nächsten drei formeln gehen darauf ein wie für die SumTab vom anderen R Code die Verbindung zu den Tabellen hier hergestellt werden kann
+### um die korrelationen zu erhalten 
+ 
  
 AddCorCol <- function(SumTable,ColObject,CompProp){
         CorVector <- rep(NA,nrow(SumTable))
@@ -293,7 +308,9 @@ CalcIndustryCor <- function(SicAcquiror,SicTarget,Date,CompProp){
 CalcIndustryTs <- function(Date,Sic,SicDigits){
         NoObsReq = 10        ## das irgendwie vorher definieren   
         NoCompReq = 10       ## das irgendwie vorher definieren
-        if(x>4){return(NA)}  ## das mit 1 ist noch nicht gut --> verwirrden
+        if(SicDigits>4){return(NA)}  ## das mit 1 ist noch nicht gut --> verwirrden
+        ### es ist noch nicht auf die Sic länge eingegangen
+        ### es ist noch nicht auf die auswahl der industry eingegangen
         Table <- Table[[x]][,Sic]   ######### hier noch richtige liste auswähleen
         ##if(sum(Table)<=10){return((Date,Sic,x+1))}
         IndustryTs <- Table[Bo,Date]
@@ -322,14 +339,6 @@ SicPosList<-list(SicFour = SicFour, SicThree = SicThree, SicTwo = SicTwo, SicOne
 
 ##*****************************************************************   
 
-SapMatConv<-function(SaPMat){
-        for (i_col in 6:ncol(SaPMat)){
-            temp <- SaPMat[,i_col]
-            temp[temp] <- SaPMat[temp,"DSCD"]
-            SaPMat[,i_col] <- temp
-            }
-        SaPMatDscd <<- SaPMat  
-        }
             
 Read_SapData <- function(SapMat=SaPMat,CompPropCol="KPI"){        
         SapData <- read.csv("S&Pkons.csv",sep=";",dec=".")
@@ -347,13 +356,14 @@ Read_SapData <- function(SapMat=SaPMat,CompPropCol="KPI"){
 
 Read_SapData()
         
+
 ##erg<-function(SapData = SapData2,SaPMat){
 ##        
 ##        SapDataBoolean <- sapply(names(SapData),function(x){},simplify=F,USE.NAMES = TRUE)
 ##        for(i_table in 1:length(SapData)){
 ##       rownames(SaPMat)<-SaPMat[,"DSCD"]
 ##        SapDataBoolean[[i_table]]<-SaPMat[SapData[[i_table]][,"DSCD"],]
-##        }
+##        }cd Github
 ##        SapDataBoolean
 ##        }
 
@@ -369,7 +379,213 @@ Compute_SapDataBoolean<-function(SapData = SapData,SaPMat){         ## hier noch
         
         
 a<-"TA";summary(SapData2[[a]][,"DSCD"]==fef[[a]][,"DSCD"])
+ 
+
+function(SapDataBoolean,SicAcquiror,SicTarget,Date,CompProp){
+        TimePeriod <- 10     ##     das irgendwie vorher definieren
+        Date <- as.POSIXlt(Date)
+        Date$year <- Date$year - (TimePeriod:1)  ## prüfen ob das mit der rheihenfolge passt
+        Date<-as.Date(Date)
+        Date<-substring(as.Date(Date),1,7)
+        Date<-sort(Date)
+        AcIndustryTs <- CalcIndustryTs(Date,SicAcquiror,SicDigits=4)  ## das mit 1 ist noch nicht gut --> verwirrden
+        TaIndustryTs <- CalcIndustryTs(Date,SicTarget,SicDigits=4)    ## das mit 1 ist noch nicht gut --> verwirrden
+        if(any(is.na(AcIndustryTs,TaIndustryTs){return(NA)}
+        #### hier noch die regression mit dem Marktindex einfügen
+        cor(rowMeans(AcIndustryTs),RowMeans(TaIndustryTs))
+        
+        } 
+        
+CalcIndustryTs1<-function(BooleanSapData,SapData,Date,Sic,SicDigits=4,KPI,Method){
+        NoObsReq<-8
+        NoCompReq<-5
+        ##if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+            if(SicDigits==0){return(NA)}
+            Boolean <- substring(BooleanSapData[[KPI]]$SIC_four,1,SicDigits)==substring(Sic,1,SicDigits)
+            Boolean[is.na(Boolean)]<-FALSE
+
+            ##BooleanSapData[[KPI]][,]==Sic
+            if(Method == "one"){   
+            Spalten<-Boolean*BooleanSapData[[KPI]][,max(Date)]
+            IndustryTs <- SapData[[KPI]][as.logical(Spalten),c("DSCD","SIC_four",Date)]
+            } 
+            else if(Method == "two"){   
+            Spalten<-rowSums(Boolean*BooleanSapData[[KPI]][,Date])>0
+            IndustryTs <- SapData[[KPI]][as.logical(Spalten),c("DSCD","SIC_four",Date)]
+            }  
+            else if (Method == "three"){ 
+            Spalten<-Boolean*BooleanSapData[[KPI]][,Date]
+            ##apply(Spalten,1,function(x){SapData[[KPI]][,Date][x]})
+            IndustryTs <- sapply(1:length(Date),function(x){SapData[[KPI]][,Date][,x][as.logical(Spalten[,x])]})
+            }
+            ##apply(SapData[[KPI]][,Date],1,function(x){[x]})
+        if(sum(rowSums(!is.na(IndustryTs[,Date]))>=NoObsReq)>=NoCompReq){          ## test whether there are too less observations per company or to less companies for the industry
+            return(IndustryTs[rowSums(!is.na(IndustryTs[,Date]))>=NoObsReq,])}     ## returns only those companies with enough observations
+        else {CalcIndustryTs1(BooleanSapData,SapData,Date,Sic,SicDigits-1,KPI,Method)}
+        
+        }
+
+ CalcIndustryTs2<-function(BooleanSapData,SapData,Date,Sic,SicDigits=4,KPI,Method){
+        NoObsReq<-8
+        NoCompReq<-5
+        ##if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+     
+        if(SicDigits==0){return(NA)}
+        Boolean <- substring(BooleanSapData[[KPI]]$SIC_four,1,SicDigits)==substring(Sic,1,SicDigits)
+        Boolean[is.na(Boolean)]<-FALSE
+
+        if(Method == "one"|Method == "two"){    
+            ##BooleanSapData[[KPI]][,]==Sic
+            if(Method == "one"){   
+                Spalten<-Boolean*BooleanSapData[[KPI]][,max(Date)]
+                IndustryTs <- SapData[[KPI]][as.logical(Spalten),c("DSCD","SIC_four",Date)]
+                } 
+                else if(Method == "two"){   
+                Spalten<-rowSums(Boolean*BooleanSapData[[KPI]][,Date])>0
+                IndustryTs <- SapData[[KPI]][as.logical(Spalten),c("DSCD","SIC_four",Date)]
+                }  
+                
+            if(sum(rowSums(!is.na(IndustryTs[,Date]))>=NoObsReq)>=NoCompReq){          ## test whether there are too less observations per company or to less companies for the industry
+                return(IndustryTs[rowSums(!is.na(IndustryTs[,Date]))>=NoObsReq,])}     ## returns only those companies with enough observations
+                else {CalcIndustryTs2(BooleanSapData,SapData,Date,Sic,SicDigits-1,KPI,Method)}
+            }
+        else if(Method == "three"){ 
+            Spalten<-Boolean*BooleanSapData[[KPI]][,Date]
+            ##apply(Spalten,1,function(x){SapData[[KPI]][,Date][x]})
+            IndustryTs <- sapply(1:length(Date),function(x){SapData[[KPI]][,Date][,x][as.logical(Spalten[,x])]})
+            
+            if(sum(sapply(IndustryTs,length)>=NoObsReq)>=NoCompReq){          ## test whether there are too less observations per company or to less companies for the industry
+                return(IndustryTs[sapply(IndustryTs,length)>=NoObsReq])}     ## returns only those companies with enough observations
+                else {CalcIndustryTs2(BooleanSapData,SapData,Date,Sic,SicDigits-1,KPI,Method)}
+            }
+            
+            
+            ##apply(SapData[[KPI]][,Date],1,function(x){[x]})
+
+        
+        }     
+
+
+CalcCorr<-function(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,KPI,Method){
+        TimePeriod <- 10     ##     das irgendwie vorher definieren
+        Date <- as.POSIXlt(Date)
+        Date$year <- Date$year - (TimePeriod:1)  ## prüfen ob das mit der rheihenfolge passt
+        Date<-as.Date(Date)
+        Date<-substring(as.Date(Date),1,7)
+        Date<-sort(Date)
+        AcIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date,SicAcquiror,SicDigits=4,KPI,Method)  ## das mit 1 ist noch nicht gut --> verwirrden
+        TaIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date,SicTarget,SicDigits=4,KPI,Method)    ## das mit 1 ist noch nicht gut --> verwirrden
+        ##print(TaIndustryTs)
+        ##print(AcIndustryTs)
+        ##if(any(is.na(AcIndustryTs,TaIndustryTs))){return(NA)}
+            if(length(AcIndustryTs)==1|length(TaIndustryTs)==1){return(NA)}
+        #### hier noch die regression mit dem Marktindex einfügen
+        ##return(list(colMeans(AcIndustryTs[,-(1:2)],na.rm=T),colMeans(TaIndustryTs[,-(1:2)],na.rm=T)))
+        return(cor(colMeans(AcIndustryTs[,-(1:2)],na.rm=T),colMeans(TaIndustryTs[,-(1:2)],na.rm=T)))
+        ##return(list(AcIndustryTs,TaIndustryTs))
+        } 
       
+        
+CalcIndustryTs<-function(BooleanSapData,SapData,Date,Sic,SicDigits=4,KPI,Method){
+        NoObsReq<-8
+        NoCompReq<-5
+        ##if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+            SicL<-nchar(Sic)
+        if (SicL<4){Sic<-paste(paste(rep(0,4-SicL),collapse=""),Sic,sep="")}
+        
+        if(SicDigits==0){return(NA)}
+        Boolean <- substring(BooleanSapData[[KPI]]$SIC_four,1,SicDigits)==substring(Sic,1,SicDigits)
+        Boolean[is.na(Boolean)]<-FALSE
+
+        if(Method == "one"|Method == "two"){    
+            ##BooleanSapData[[KPI]][,]==Sic
+            if(Method == "one"){   
+                Spalten<-Boolean*BooleanSapData[[KPI]][,max(Date)]
+                IndustryTs <- SapData[[KPI]][as.logical(Spalten),c("DSCD","SIC_four",Date)]
+                } 
+                else if(Method == "two"){   
+                Spalten<-rowSums(Boolean*BooleanSapData[[KPI]][,Date])>0
+                IndustryTs <- SapData[[KPI]][as.logical(Spalten),c("DSCD","SIC_four",Date)]
+                }  
+                
+            if(sum(rowSums(!is.na(IndustryTs[,Date]))>=NoObsReq)>=NoCompReq){          ## test whether there are too less observations per company or to less companies for the industry
+                return(IndustryTs[rowSums(!is.na(IndustryTs[,Date]))>=NoObsReq,])}     ## returns only those companies with enough observations
+                else {CalcIndustryTs(BooleanSapData,SapData,Date,Sic,SicDigits-1,KPI,Method)}
+            }
+        else if(Method == "three"){ 
+            Spalten<-Boolean*BooleanSapData[[KPI]][,Date]
+
+            ##apply(Spalten,1,function(x){SapData[[KPI]][,Date][x]})
+            IndustryTs <- sapply(Date,function(i_Date){SapData[[KPI]][,Date][,i_Date][as.logical(Spalten[,i_Date])]},USE.NAMES = TRUE)
+            names(IndustryTs) <- Date
+            
+            if(sum(sapply(IndustryTs,length)>=NoObsReq)>=NoCompReq){          ## test whether there are too less observations per company or to less companies for the industry
+                return(IndustryTs[sapply(IndustryTs,length)>=NoObsReq])}     ## returns only those companies with enough observations
+                else {CalcIndustryTs(BooleanSapData,SapData,Date,Sic,SicDigits-1,KPI,Method)}
+            }
+            
+            
+            ##apply(SapData[[KPI]][,Date],1,function(x){[x]})
+
+        
+        }   
+        
+  
+CalcCorr(Boolen,SapData,6022,6034,"2011-07-21","MV","two")
+        
+system.time(CalcIndustryTs(Boolen,SapData,Date,6022,SicDigits=4,"MV","two") )
+        
+CalcIndustryTs2(Boolen,SapData,Date,6034,SicDigits=4,"MV","two")        
+
+CalcIndustryTs(Boolen,SapData,Date,6034,SicDigits=4,"MV","three")   
+ 
+ders<-function(x){print(x);if(x>0){ders(x-1)}} 
+
+CorRow<-function(SumTab,BooleanSapData,SapData,KPI,Method){
+        N_Values <- nrow(SumTab)
+        Correlations <- rep(NA,N_Values)
+        ##SicAcquiror,SicTarget,Date,
+        for(n_row in 1:N_Values){
+            SicAcquiror <- SumTab[n_row,"SicAc"]
+            SicTarget <- SumTab[n_row,"SicTa"]
+            Date <- SumTab[n_row,"Date"]
+            Correlations[n_row] <- CalcCorr(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,KPI,Method)
+            }
+        Correlations <- as.numeric(Correlations)
+        }
+            
+MethodOneTwo<-function(Date,Boolean,SicDigits=1,KPI,Method){
+
+        }        
+
+CalcIndustryTs(Date,Sic,SicDigits=1){
+        BooleanSapData$Sic==Sic
+        Method1    
+        Spalten<-Boolean*SapDataBoolean[[KPI]][,max(Date)]
+        ##SapData[SapDataBoolean[[KPI]][,max(Date)],]    
+        Method2    
+        Spalten<-colSums(Boolean*SapDataBoolean[[KPI]][,Date])>0
+        ##Spalten<-apply(Boolean*SapDataBoolean[[KPI]][,Date],1,any)
+        ##SapData[apply(SapDataBoolean[[KPI]][,Date],1,any),]    
+        Method3 
+        Spalten<-Boolean*SapDataBoolean[[KPI]][,Date]
+        apply(Spalten,1,function(x){SapData[[KPI]][,Date][x]})
+        sapply(,1,function(x)SapData[[KPI]][,Date][,x][Spalten[,1],]
+        ##apply(SapData[[KPI]][,Date],1,function(x){[x]})
+                if(sum(rowSums(!is.na(IndustryTs))>=NoObsReq)>=NoCompReq){          ## test whether there are too less observations per company or to less companies for the industry
+            return(IndustryTs[rowSums(!is.na(IndustryTs))>=NoObsReq,])}     ## returns only those companies with enough observations
+        else {CalcIndustryTs(Date,Sic,SicDigits+1)}
+        
+        }          
         
 TsSicCalc <- function(SapDataTab = SapData2, SapSetOb = SapSet, CompChar = "MV", SapMat = SaPMat, ObsReq = 5){
    
