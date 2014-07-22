@@ -18,20 +18,22 @@ SaPcreate <- function(SaPConst = SaPConst){
 	RowVec<-SaPConst$DSCD[DSCDPos] 
 	##SicVec<-SaPConst$WC07021[!duplicated(SaPConst$DSCD)]
 	SicVec<-SaPConst$WC07021[DSCDPos] ## filters different Sic positions
+    NamesVec<-SaPConst$Name[DSCDPos]
 	
 	SicVec[nchar((SicVec))==3]<-paste("0",SicVec[nchar((SicVec))==3],sep="")
 
 	RowLeng<-length(RowVec)
-	ColLeng<-length(ColVec)+2+3
+	ColLeng<-length(ColVec)+3+3
 	SaPMat<-matrix(rep(NA,RowLeng*ColLeng),nrow=RowLeng,ncol=ColLeng)
 	SaPMat<-as.data.frame(SaPMat)
 
-	colnames(SaPMat)<-c("DSCD","SIC_four","SIC_three","SIC_two","SIC_one",ColVec)
-	SaPMat[,1]<-RowVec
-	SaPMat[,2]<-as.factor(SicVec)
-	SaPMat[,3]<-as.factor(substr(SicVec,1,3))
-	SaPMat[,4]<-as.factor(substr(SicVec,1,2))
-	SaPMat[,5]<-as.factor(substr(SicVec,1,1))
+	colnames(SaPMat)<-c("Name","DSCD","SIC_four","SIC_three","SIC_two","SIC_one",ColVec)
+	SaPMat[,1]<-NamesVec
+    SaPMat[,2]<-RowVec
+	SaPMat[,3]<-as.factor(SicVec)
+	SaPMat[,4]<-as.factor(substr(SicVec,1,3))
+	SaPMat[,5]<-as.factor(substr(SicVec,1,2))
+	SaPMat[,6]<-as.factor(substr(SicVec,1,1))
 
 	SaPMat
 	}
@@ -72,20 +74,71 @@ SaPMat <- SaPfill(SaPMat, SaPConst)
 ## ließt tabelle mit den company properties ein
 
 Read_SapData <- function(SapMat=SaPMat,CompPropCol="KPI"){        
-        SapData <- read.csv("S&Pkons.csv",sep=";",dec=".")
+        SapData <- read.csv("S&Pkons.csv",sep=";",dec=".",stringsAsFactors=F)
+        ## SapData2 <- read.csv("S&Pkons.csv",sep=";",dec=".",stringsAsFactors=F)
         Dates <- as.Date(substring(colnames(SapData[,-c(1:3)]),2,11),"%Y.%m.%d")
         ColNames <- c(colnames(SapData[,1:3]),substring(Dates,1,7))
         colnames(SapData) <- ColNames        
 
         CharLevel <- unique(as.character(SapData[,CompPropCol]))
-        
+        ##CharLevel <- unique(as.character(SapData2[,"KPI"]))
         SapData<- merge(SapMat[,c("DSCD","SIC_four")],SapData,by.x="DSCD",by.y="DSCD",all=T,sort=F)
-         
+        ##SapData3<- merge(SaPMat[,c("DSCD","SIC_four")],SapData2,by.x="DSCD",by.y="DSCD",all=T,sort=F) 
+          SapData <<- SapData
         SapData <- sapply(CharLevel,FUN=function(x){y<-SapData[CompPropCol]==x;y=SapData[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE) 
+      SapData <<- SapData
+      }
+       ##SapData4  <- sapply(CharLevel,FUN=function(x){y<-SapData2["KPI"]==x;y=SapData2[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE)
+        SapData  <- sapply(CharLevel,function(x){y<-SapData[CompPropCol]==x;y=SapData[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE)
+        ##SapData5 <- sapply(SapData4,FUN=function(x){merge(SaPMat[,c("DSCD","SIC_four")],x,by.x="DSCD",by.y="DSCD",all=T,sort=F)},simplify=F,USE.NAMES = TRUE)
+       ### SapData <- sapply(SapData,function(x){merge(SaPMat[,c("DSCD","SIC_four")],x,by.x="DSCD",by.y="DSCD",all=T,sort=F)},simplify=F,USE.NAMES = TRUE)
+       ### SapData <- sapply(SapData,function(x){x[order(x$DSCD),]},simplify=F,USE.NAMES = TRUE)
+        ter <- function(aa){
+            x <- SapData[[aa]]
+            y <<- !is.element(SaPMat$DSCD,x$DSCD)
+           ## print(y)
+            if(sum(y)==0){x<-x[order(x$DSCD),];rownames(x)<-x$DSCD;return(x)}
+            
+            z <<- SaPMat[y,c("DSCD","SIC_four","Name")];
+            w <<- matrix(rep(NA,nrow(z)*(ncol(x)-4)),ncol=ncol(x)-4,nrow=nrow(z))
+            ##print(w)
+            rrr<-cbind(z,aa,w)
+            
+
+            colnames(rrr)<-colnames(x)
+            rrr<-rbind(x,rrr)
+            
+            rrr<-rrr[order(rrr$DSCD),]
+            rownames(rrr)<-rrr$DSCD
+            rrr
+           }
+        
+        SapData <- sapply(SapData,function(x){x[order(x$DSCD),]},simplify=F,USE.NAMES = TRUE)
+        
+        
+        
         SapData <<- SapData
         }
 
 Read_SapData()
+
+ter <- function(aa){
+            x <- SapData[[aa]]
+            y <<- !is.element(SapData$MV,x$DSCD)
+           ## print(y)
+            if(sum(y)==0){x<-x[order(x$DSCD),];rownames(x)<-x$DSCD;return(x)}
+            
+            z <<- SapData$MV[y,c("Name","DSCD","KPI")]##,"SIC_four")]
+            z$KPI<-aa
+            w <<- matrix(rep(NA,nrow(z)*(ncol(x)-3)),ncol=ncol(x)-3,nrow=nrow(z))
+            ##print(w)
+            rrr<-cbind(z,w)
+            colnames(rrr)<-colnames(x)
+            rrr
+            ##rbind(y,cbind(z,w))
+           }
+
+
 
 ##*******************************************************************************************************************
 ## neue tabelle die identisch zu  SapData aufgebaut ist aber anstelle der Unternehmenskennzahlen die zugehörigkeit zum SaP 1500 angibt
