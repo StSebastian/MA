@@ -86,22 +86,24 @@ SapData_Read <- function(SapMat=SaPMat,CompPropCol="KPI",NaRm = FALSE){
         SapData<- merge(SapMat[,c("DSCD","SIC_four")],SapData,by.x="DSCD",by.y="DSCD",all=T,sort=F)
         ##if(NaRm){SapData <- SapData[!is.na(SapData[,"SIC_four"]),]}
         ##SapData3<- merge(SaPMat[,c("DSCD","SIC_four")],SapData2,by.x="DSCD",by.y="DSCD",all=T,sort=F) 
+       
         SapData <- sapply(CharLevel,FUN=function(x){y<-SapData[CompPropCol]==x;y=SapData[y,]},simplify=F,USE.NAMES = TRUE) 
-     
-      
+        ##SapData <<- SapData
+    
        ##SapData4  <- sapply(CharLevel,FUN=function(x){y<-SapData2["KPI"]==x;y=SapData2[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE)
         ##SapData  <- sapply(CharLevel,function(x){y<-SapData[CompPropCol]==x;y=SapData[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE)
         ##SapData5 <- sapply(SapData4,FUN=function(x){merge(SaPMat[,c("DSCD","SIC_four")],x,by.x="DSCD",by.y="DSCD",all=T,sort=F)},simplify=F,USE.NAMES = TRUE)
        ### SapData <- sapply(SapData,function(x){merge(SaPMat[,c("DSCD","SIC_four")],x,by.x="DSCD",by.y="DSCD",all=T,sort=F)},simplify=F,USE.NAMES = TRUE)
        ### SapData <- sapply(SapData,function(x){x[order(x$DSCD),]},simplify=F,USE.NAMES = TRUE)
-    
-       SapData <- sapply(names(SapData),SapData_Complete,simplify=F,USE.NAMES = TRUE)
+
+       SapData <- sapply(names(SapData),SapData_Complete,SapData=SapData,simplify=F,USE.NAMES = TRUE)
+       
        if(NaRm){SapData <- sapply(names(SapData),function(x){SapData[[x]][!is.na(SapData[[x]][,"SIC_four"]),]},simplify=F,USE.NAMES = TRUE)}
 
        SapData<<-SapData
        }
        
-       SapData_Complete  <- function(CompPropLevel){
+       SapData_Complete  <- function(CompPropLevel,SapData){
             PropTable <- SapData[[CompPropLevel]]
             MissingDscd <- !is.element(SaPMat$DSCD,PropTable$DSCD)
 
@@ -123,8 +125,8 @@ SapData_Read <- function(SapMat=SaPMat,CompPropCol="KPI",NaRm = FALSE){
             NewPropTable
             }
         
-
-SapData_Read(SapMat=SaPMat,CompPropCol="KPI",NaRm = TRUE)
+system.time(SapData_Read())
+system.time(SapData_Read(SapMat=SaPMat,CompPropCol="KPI",NaRm = TRUE))
 
 SapData_Read <- function(SapMat=SaPMat,CompPropCol="KPI"){        
         SapData <- read.csv("S&Pkons.csv",sep=";",dec=".",stringsAsFactors=F)
@@ -138,7 +140,7 @@ SapData_Read <- function(SapMat=SaPMat,CompPropCol="KPI"){
         SapData<- merge(SapMat[,c("DSCD","SIC_four")],SapData,by.x="DSCD",by.y="DSCD",all=T,sort=F)
         ##SapData3<- merge(SaPMat[,c("DSCD","SIC_four")],SapData2,by.x="DSCD",by.y="DSCD",all=T,sort=F) 
         ##SapData <- sapply(CharLevel,FUN=function(x){y<-SapData[CompPropCol]==x;y=SapData[y,]},simplify=F,USE.NAMES = TRUE) 
-     
+
       
         SapData  <- sapply(CharLevel,FUN=function(x){y<-SapData[CompPropCol]==x;y=SapData[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE)
         ##SapData  <- sapply(CharLevel,function(x){y<-SapData[CompPropCol]==x;y=SapData[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE)
@@ -146,6 +148,7 @@ SapData_Read <- function(SapMat=SaPMat,CompPropCol="KPI"){
         SapData <- sapply(SapData,FUN=function(x){x[order(x$DSCD),]},simplify=F,USE.NAMES = TRUE)
        ### SapData <- sapply(SapData,function(x){merge(SaPMat[,c("DSCD","SIC_four")],x,by.x="DSCD",by.y="DSCD",all=T,sort=F)},simplify=F,USE.NAMES = TRUE)
        ### SapData <- sapply(SapData,function(x){x[order(x$DSCD),]},simplify=F,USE.NAMES = TRUE)
+       SapData<<-SapData
         }
         
 ##SapData_Read()
@@ -167,6 +170,15 @@ Compute_SapDataBoolean<-function(SapData = SapData,SaPMat){         ## hier noch
         SapDataBoolean
         }        
         
+##Boolen<-Compute_SapDataBoolean(SapData,SaPMat)  
+
+Compute_SapDataBoolean<-function(SapData = SapData,SaPMat){         ## hier nochdeoppelte Benennung
+        rownames(SaPMat)<-SaPMat[,"DSCD"]
+        SapDataBoolean<-SaPMat[SapData$MV[,"DSCD"],]
+
+        SapDataBoolean
+        }   
+
 Boolen<-Compute_SapDataBoolean(SapData,SaPMat)               
 
 ### ********************************************************************************************************************
@@ -199,9 +211,56 @@ CalcCorr<-function(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,KPI,Method)
         return(cor(colMeans(AcIndustryTs[,-(1:2)],na.rm=T),colMeans(TaIndustryTs[,-(1:2)],na.rm=T)))
         ##return(list(AcIndustryTs,TaIndustryTs))
         } 
-      
+  
+CalcIndustryTs<-function(BooleanSapData,SapData,Date,Sic,SicDigits=4,KPI,Method){ ## für eintabelliges BooleanSapData
+        NoObsReq<-8
+        NoCompReq<-5
+        ##if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+            SicL<-nchar(Sic)
+        if (SicL<4){Sic<-paste(paste(rep(0,4-SicL),collapse=""),Sic,sep="")}
         
-CalcIndustryTs<-function(BooleanSapData,SapData,Date,Sic,SicDigits=4,KPI,Method){
+        if(SicDigits==0){return(NA)}
+        Boolean <- substring(BooleanSapData$SIC_four,1,SicDigits)==substring(Sic,1,SicDigits)
+        Boolean[is.na(Boolean)]<-FALSE
+
+        if(Method == "one"|Method == "two"){    
+            ##BooleanSapData[[KPI]][,]==Sic
+            if(Method == "one"){   
+                Spalten<-Boolean*BooleanSapData[,max(Date)]
+                IndustryTs <- SapData[[KPI]][as.logical(Spalten),c("DSCD","SIC_four",Date)]
+                } 
+                else if(Method == "two"){   
+                Spalten<-rowSums(Boolean*BooleanSapData[,Date])>0
+                IndustryTs <- SapData[[KPI]][as.logical(Spalten),c("DSCD","SIC_four",Date)]
+                }  
+                
+            if(sum(rowSums(!is.na(IndustryTs[,Date]))>=NoObsReq)>=NoCompReq){          ## test whether there are too less observations per company or to less companies for the industry
+                return(IndustryTs[rowSums(!is.na(IndustryTs[,Date]))>=NoObsReq,])}     ## returns only those companies with enough observations
+                else {CalcIndustryTs(BooleanSapData,SapData,Date,Sic,SicDigits-1,KPI,Method)}
+            }
+        else if(Method == "three"){ 
+            Spalten<-Boolean*BooleanSapData[,Date]
+
+            ##apply(Spalten,1,function(x){SapData[[KPI]][,Date][x]})
+            IndustryTs <- sapply(Date,function(i_Date){SapData[[KPI]][,Date][,i_Date][as.logical(Spalten[,i_Date])]},USE.NAMES = TRUE)
+            names(IndustryTs) <- Date
+            
+            if(all(sapply(IndustryTs,length)>=NoCompReq)){          ## test whether there are too less observations per company or to less companies for the industry
+                return(IndustryTs)}     ## returns only those companies with enough observations
+                else {CalcIndustryTs(BooleanSapData,SapData,Date,Sic,SicDigits-1,KPI,Method)}
+            }
+            
+            
+            ##apply(SapData[[KPI]][,Date],1,function(x){[x]})
+
+        
+        }   
+              
+        
+CalcIndustryTs<-function(BooleanSapData,SapData,Date,Sic,SicDigits=4,KPI,Method){ ##für BooleanSapData als liste
         NoObsReq<-8
         NoCompReq<-5
         ##if(SicDigits=1){}
