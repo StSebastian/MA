@@ -73,7 +73,60 @@ SaPMat <- SaPfill(SaPMat, SaPConst)
 ###***********************************************************************************************************
 ## ließt tabelle mit den company properties ein
 
-Read_SapData <- function(SapMat=SaPMat,CompPropCol="KPI"){        
+SapData_Read <- function(SapMat=SaPMat,CompPropCol="KPI",NaRm = FALSE){
+            
+        SapData <- read.csv("S&Pkons.csv",sep=";",dec=".",stringsAsFactors=F)
+        ## SapData2 <- read.csv("S&Pkons.csv",sep=";",dec=".",stringsAsFactors=F)
+        Dates <- as.Date(substring(colnames(SapData[,-c(1:3)]),2,11),"%Y.%m.%d")
+        ColNames <- c(colnames(SapData[,1:3]),substring(Dates,1,7))
+        colnames(SapData) <- ColNames        
+
+        CharLevel <- unique(as.character(SapData[,CompPropCol]))
+        ##CharLevel <- unique(as.character(SapData2[,"KPI"]))
+        SapData<- merge(SapMat[,c("DSCD","SIC_four")],SapData,by.x="DSCD",by.y="DSCD",all=T,sort=F)
+        ##if(NaRm){SapData <- SapData[!is.na(SapData[,"SIC_four"]),]}
+        ##SapData3<- merge(SaPMat[,c("DSCD","SIC_four")],SapData2,by.x="DSCD",by.y="DSCD",all=T,sort=F) 
+        SapData <- sapply(CharLevel,FUN=function(x){y<-SapData[CompPropCol]==x;y=SapData[y,]},simplify=F,USE.NAMES = TRUE) 
+     
+      
+       ##SapData4  <- sapply(CharLevel,FUN=function(x){y<-SapData2["KPI"]==x;y=SapData2[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE)
+        ##SapData  <- sapply(CharLevel,function(x){y<-SapData[CompPropCol]==x;y=SapData[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE)
+        ##SapData5 <- sapply(SapData4,FUN=function(x){merge(SaPMat[,c("DSCD","SIC_four")],x,by.x="DSCD",by.y="DSCD",all=T,sort=F)},simplify=F,USE.NAMES = TRUE)
+       ### SapData <- sapply(SapData,function(x){merge(SaPMat[,c("DSCD","SIC_four")],x,by.x="DSCD",by.y="DSCD",all=T,sort=F)},simplify=F,USE.NAMES = TRUE)
+       ### SapData <- sapply(SapData,function(x){x[order(x$DSCD),]},simplify=F,USE.NAMES = TRUE)
+    
+       SapData <- sapply(names(SapData),SapData_Complete,simplify=F,USE.NAMES = TRUE)
+       if(NaRm){SapData <- sapply(names(SapData),function(x){SapData[[x]][!is.na(SapData[[x]][,"SIC_four"]),]},simplify=F,USE.NAMES = TRUE)}
+
+       SapData<<-SapData
+       }
+       
+       SapData_Complete  <- function(CompPropLevel){
+            PropTable <- SapData[[CompPropLevel]]
+            MissingDscd <- !is.element(SaPMat$DSCD,PropTable$DSCD)
+
+            if(sum(MissingDscd)==0){
+                   PropTable<-PropTable[order(PropTable$DSCD),]
+                   rownames(PropTable)<-PropTable$DSCD
+                   return(PropTable)
+                   }
+            
+            MissingDscd <- SaPMat[MissingDscd,c("DSCD","SIC_four","Name")];
+            NaVal <- matrix(rep(NA,nrow(MissingDscd)*(ncol(PropTable)-4)),ncol=ncol(PropTable)-4,nrow=nrow(MissingDscd))
+
+            NewPropTable<-cbind(MissingDscd,CompPropLevel,NaVal)
+
+            colnames(NewPropTable) <- colnames(PropTable)
+            NewPropTable <- rbind(PropTable, NewPropTable)
+            NewPropTable<-NewPropTable[order(NewPropTable$DSCD),]
+            rownames(NewPropTable)<-NewPropTable$DSCD
+            NewPropTable
+            }
+        
+
+SapData_Read(SapMat=SaPMat,CompPropCol="KPI",NaRm = TRUE)
+
+SapData_Read <- function(SapMat=SaPMat,CompPropCol="KPI"){        
         SapData <- read.csv("S&Pkons.csv",sep=";",dec=".",stringsAsFactors=F)
         ## SapData2 <- read.csv("S&Pkons.csv",sep=";",dec=".",stringsAsFactors=F)
         Dates <- as.Date(substring(colnames(SapData[,-c(1:3)]),2,11),"%Y.%m.%d")
@@ -84,60 +137,18 @@ Read_SapData <- function(SapMat=SaPMat,CompPropCol="KPI"){
         ##CharLevel <- unique(as.character(SapData2[,"KPI"]))
         SapData<- merge(SapMat[,c("DSCD","SIC_four")],SapData,by.x="DSCD",by.y="DSCD",all=T,sort=F)
         ##SapData3<- merge(SaPMat[,c("DSCD","SIC_four")],SapData2,by.x="DSCD",by.y="DSCD",all=T,sort=F) 
-          SapData <<- SapData
-        SapData <- sapply(CharLevel,FUN=function(x){y<-SapData[CompPropCol]==x;y=SapData[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE) 
-      SapData <<- SapData
-      }
-       ##SapData4  <- sapply(CharLevel,FUN=function(x){y<-SapData2["KPI"]==x;y=SapData2[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE)
-        SapData  <- sapply(CharLevel,function(x){y<-SapData[CompPropCol]==x;y=SapData[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE)
-        ##SapData5 <- sapply(SapData4,FUN=function(x){merge(SaPMat[,c("DSCD","SIC_four")],x,by.x="DSCD",by.y="DSCD",all=T,sort=F)},simplify=F,USE.NAMES = TRUE)
+        ##SapData <- sapply(CharLevel,FUN=function(x){y<-SapData[CompPropCol]==x;y=SapData[y,]},simplify=F,USE.NAMES = TRUE) 
+     
+      
+        SapData  <- sapply(CharLevel,FUN=function(x){y<-SapData[CompPropCol]==x;y=SapData[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE)
+        ##SapData  <- sapply(CharLevel,function(x){y<-SapData[CompPropCol]==x;y=SapData[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE)
+        SapData <- sapply(SapData,FUN=function(x){merge(SaPMat[,c("DSCD","SIC_four")],x,by.x="DSCD",by.y="DSCD",all=T,sort=F)},simplify=F,USE.NAMES = TRUE)
+        SapData <- sapply(SapData,FUN=function(x){x[order(x$DSCD),]},simplify=F,USE.NAMES = TRUE)
        ### SapData <- sapply(SapData,function(x){merge(SaPMat[,c("DSCD","SIC_four")],x,by.x="DSCD",by.y="DSCD",all=T,sort=F)},simplify=F,USE.NAMES = TRUE)
        ### SapData <- sapply(SapData,function(x){x[order(x$DSCD),]},simplify=F,USE.NAMES = TRUE)
-        ter <- function(aa){
-            x <- SapData[[aa]]
-            y <<- !is.element(SaPMat$DSCD,x$DSCD)
-           ## print(y)
-            if(sum(y)==0){x<-x[order(x$DSCD),];rownames(x)<-x$DSCD;return(x)}
-            
-            z <<- SaPMat[y,c("DSCD","SIC_four","Name")];
-            w <<- matrix(rep(NA,nrow(z)*(ncol(x)-4)),ncol=ncol(x)-4,nrow=nrow(z))
-            ##print(w)
-            rrr<-cbind(z,aa,w)
-            
-
-            colnames(rrr)<-colnames(x)
-            rrr<-rbind(x,rrr)
-            
-            rrr<-rrr[order(rrr$DSCD),]
-            rownames(rrr)<-rrr$DSCD
-            rrr
-           }
-        
-        SapData <- sapply(SapData,function(x){x[order(x$DSCD),]},simplify=F,USE.NAMES = TRUE)
-        
-        
-        
-        SapData <<- SapData
         }
-
-Read_SapData()
-
-ter <- function(aa){
-            x <- SapData[[aa]]
-            y <<- !is.element(SapData$MV,x$DSCD)
-           ## print(y)
-            if(sum(y)==0){x<-x[order(x$DSCD),];rownames(x)<-x$DSCD;return(x)}
-            
-            z <<- SapData$MV[y,c("Name","DSCD","KPI")]##,"SIC_four")]
-            z$KPI<-aa
-            w <<- matrix(rep(NA,nrow(z)*(ncol(x)-3)),ncol=ncol(x)-3,nrow=nrow(z))
-            ##print(w)
-            rrr<-cbind(z,w)
-            colnames(rrr)<-colnames(x)
-            rrr
-            ##rbind(y,cbind(z,w))
-           }
-
+        
+##SapData_Read()
 
 
 ##*******************************************************************************************************************
