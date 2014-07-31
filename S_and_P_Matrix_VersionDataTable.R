@@ -1,22 +1,32 @@
 ######################
 ######################
 ##### for data Table##
-#####Year/month######
+#####Year/month#######
 ######################
 
 CalcCorr<-function(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,KPI,Method){
-        TimePeriod <- 10     ##     das irgendwie vorher definieren
        
         Date <- as.POSIXlt(Date)
         Date$mday <- 15        
-        Date$mon <- Date$mon - (TimePeriod:1)  ## prüfen ob das mit der reihenfolge passt
+            TimePeriod <- 10     ##     das irgendwie vorher definieren
+            Date$mon <- Date$mon - (TimePeriod:1)  ## prüfen ob das mit der reihenfolge passt
+            
+            ##TimePeriod <- 7 
+            ##Date$mon<- 00
+            ##Date$year <- Date$year - (TimePeriod:1)  ## prüfen ob das mit der reihenfolge passt
         Date<-as.Date(Date)
         Date<-substring(as.Date(Date),1,7)
         Date<-sort(Date)
         
+        ##DateSap <- Date[Date>=1995]
+        ##if(length(DateSap)<5){return(NA)} 
+        ##if(length(DateSap)==0){return(NA)}
+        DateSap <- Date
+        print(Date)
         ##print(Date)
-        AcIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date,SicAcquiror,SicDigits=4,KPI,Method)  ## das mit 1 ist noch nicht gut --> verwirrden
-        TaIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date,SicTarget,SicDigits=4,KPI,Method)    ## das mit 1 ist noch nicht gut --> verwirrden
+        AcIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date, DateSap,SicAcquiror,SicDigits=4,KPI,Method)  ## das mit 1 ist noch nicht gut --> verwirrden
+        TaIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date, DateSap,SicTarget,SicDigits=4,KPI,Method)    ## das mit 1 ist noch nicht gut --> verwirrden
+
         ##print(TaIndustryTs)
         ##print(AcIndustryTs)
         ##if(any(is.na(AcIndustryTs,TaIndustryTs))){return(NA)}
@@ -33,9 +43,11 @@ CalcCorr<-function(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,KPI,Method)
         } 
  
 
-CalcIndustryTs<-function(BooleanSapData,SapData,Date,Sic,SicDigits=4,KPI,Method){ ## für eintabelliges BooleanSapData mit data table
-        NoObsReq<-8
-        NoCompReq<-5
+CalcIndustryTs<-function(BooleanSapData,SapData,Date, DateSap,Sic,SicDigits=4,KPI,Method){ ## für eintabelliges BooleanSapData mit data table
+            NoObsReq<-8
+            NoCompReq<-5
+            ### NoObsReq<-5
+            ###NoCompReq<-4
         ##if(SicDigits=1){}
         ##else if(SicDigits=1){}
         ##else if(SicDigits=1){}
@@ -60,14 +72,14 @@ CalcIndustryTs<-function(BooleanSapData,SapData,Date,Sic,SicDigits=4,KPI,Method)
                 IndustryTs <- SapData[[KPI]][as.logical(Spalten),c("DSCD","SIC_four",Date),with=F]
                 } 
                 else if(Method == "two"){   
-                Spalten<-rowSums(Boolean*BooleanSapData[,Date,with=F])>0
+                Spalten<-rowSums(Boolean*BooleanSapData[, DateSap,with=F])>0
                 ##Spalten <- apply(Boolean*BooleanSapData[,Date,with=F],1,any)
                 IndustryTs <- SapData[[KPI]][as.logical(Spalten),c("DSCD","SIC_four",Date),with=F]
                 }  
                 
             if(sum(rowSums(!is.na(IndustryTs[,Date,with=F]))>=NoObsReq)>=NoCompReq){          ## test whether there are too less observations per company or to less companies for the industry
                 return(IndustryTs[rowSums(!is.na(IndustryTs[,Date,with=F]))>=NoObsReq,])}     ## returns only those companies with enough observations
-                else {CalcIndustryTs(BooleanSapData,SapData,Date,Sic,SicDigits-1,KPI,Method)}
+                else {CalcIndustryTs(BooleanSapData,SapData,Date, DateSap,Sic,SicDigits-1,KPI,Method)}
             }
         else if(Method == "three"){ 
             Spalten<-Boolean*BooleanSapData[,Date,with=F]
@@ -78,7 +90,7 @@ CalcIndustryTs<-function(BooleanSapData,SapData,Date,Sic,SicDigits=4,KPI,Method)
             
             if(all(sapply(IndustryTs,length)>=NoCompReq)){          ## test whether there are too less observations per company or to less companies for the industry
                 return(IndustryTs)}     ## returns only those companies with enough observations
-                else {CalcIndustryTs(BooleanSapData,SapData,Date,Sic,SicDigits-1,KPI,Method)}
+                else {CalcIndustryTs(BooleanSapData,SapData,Date, DateSap,Sic,SicDigits-1,KPI,Method)}
             }
             
             
@@ -99,7 +111,7 @@ CalcIndustryTs<-function(BooleanSapData,SapData,Date,Sic,SicDigits=4,KPI,Method)
 
 CorRow<-function(SumTab,BooleanSapData,SapData,KPI,Method){##data.table
         N_Values <- nrow(SumTab)
-        ##N_Values <- 50
+        ##N_Values <- 300
         Correlations <- rep(NA,N_Values)
         ##SicAcquiror,SicTarget,Date,
         for(n_row in 1:N_Values){
@@ -113,7 +125,7 @@ CorRow<-function(SumTab,BooleanSapData,SapData,KPI,Method){##data.table
             
             if(SicAcquiror==SicTarget){Correlations[n_row]<-1;next}
             if(as.Date(Date)<as.Date("1995-11-30")){Correlations[n_row]<-NA;next}
-  
+            print(n_row)
             Correlations[n_row] <- CalcCorr(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,KPI,Method)
             }
         Correlations <- as.numeric(Correlations)
@@ -343,7 +355,7 @@ CalcCorr<-function(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,KPI,Method)
         Date<-as.Date(Date)
         Date<-substring(as.Date(Date),1,7)
         Date<-sort(Date)
-        
+        print(Date)
         ##print(Date)
         AcIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date,SicAcquiror,SicDigits=4,KPI,Method)  ## das mit 1 ist noch nicht gut --> verwirrden
         TaIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date,SicTarget,SicDigits=4,KPI,Method)    ## das mit 1 ist noch nicht gut --> verwirrden
