@@ -1,6 +1,133 @@
 ######################
 ######################
 ##### for data Table##
+#####Year/month######
+######################
+
+CalcCorr<-function(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,KPI,Method){
+        TimePeriod <- 10     ##     das irgendwie vorher definieren
+       
+        Date <- as.POSIXlt(Date)
+        Date$mday <- 15        
+        Date$mon <- Date$mon - (TimePeriod:1)  ## prüfen ob das mit der reihenfolge passt
+        Date<-as.Date(Date)
+        Date<-substring(as.Date(Date),1,7)
+        Date<-sort(Date)
+        
+        ##print(Date)
+        AcIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date,SicAcquiror,SicDigits=4,KPI,Method)  ## das mit 1 ist noch nicht gut --> verwirrden
+        TaIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date,SicTarget,SicDigits=4,KPI,Method)    ## das mit 1 ist noch nicht gut --> verwirrden
+        ##print(TaIndustryTs)
+        ##print(AcIndustryTs)
+        ##if(any(is.na(AcIndustryTs,TaIndustryTs))){return(NA)}
+            if(length(AcIndustryTs)==1|length(TaIndustryTs)==1){return(NA)}
+            
+            if(Method=="three"){
+                return(cor(sapply(AcIndustryTs,sum,na.rm=T),sapply(TaIndustryTs,sum,na.rm=T)))
+                }
+            
+        #### hier noch die regression mit dem Marktindex einfügen
+        ##return(list(colMeans(AcIndustryTs[,-(1:2)],na.rm=T),colMeans(TaIndustryTs[,-(1:2)],na.rm=T)))
+        return(cor(colMeans(AcIndustryTs[,-(1:2),with=F],na.rm=T),colMeans(TaIndustryTs[,-(1:2),with=F],na.rm=T)))
+        ##return(list(AcIndustryTs,TaIndustryTs))
+        } 
+ 
+
+CalcIndustryTs<-function(BooleanSapData,SapData,Date,Sic,SicDigits=4,KPI,Method){ ## für eintabelliges BooleanSapData mit data table
+        NoObsReq<-8
+        NoCompReq<-5
+        ##if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+            SicL<-nchar(Sic)
+        if (SicL<4){Sic<-paste(paste(rep(0,4-SicL),collapse=""),Sic,sep="")}
+        if(SicDigits==0){return(NA)}
+        ##if(SicDigits==0){return(NA)}
+        ##if else (SicDigits==4){SIC_Col<-SIC_four}
+        ##if else (SicDigits==3){SIC_Col<-SIC_three}
+        ##if else (SicDigits==2){SIC_Col<-SIC_two}
+        ##if else (SicDigits==1){SIC_Col<-SIC_one}
+        
+        ##setkeyv(BooleanSapData,SIC_Col)
+        Boolean <- substring(BooleanSapData$SIC_four,1,SicDigits)==substring(Sic,1,SicDigits)
+        Boolean[is.na(Boolean)]<-FALSE
+
+        if(Method == "one"|Method == "two"){    
+            ##BooleanSapData[[KPI]][,]==Sic
+            if(Method == "one"){   
+                Spalten<-Boolean*BooleanSapData[[max(Date)]]
+                IndustryTs <- SapData[[KPI]][as.logical(Spalten),c("DSCD","SIC_four",Date),with=F]
+                } 
+                else if(Method == "two"){   
+                Spalten<-rowSums(Boolean*BooleanSapData[,Date,with=F])>0
+                ##Spalten <- apply(Boolean*BooleanSapData[,Date,with=F],1,any)
+                IndustryTs <- SapData[[KPI]][as.logical(Spalten),c("DSCD","SIC_four",Date),with=F]
+                }  
+                
+            if(sum(rowSums(!is.na(IndustryTs[,Date,with=F]))>=NoObsReq)>=NoCompReq){          ## test whether there are too less observations per company or to less companies for the industry
+                return(IndustryTs[rowSums(!is.na(IndustryTs[,Date,with=F]))>=NoObsReq,])}     ## returns only those companies with enough observations
+                else {CalcIndustryTs(BooleanSapData,SapData,Date,Sic,SicDigits-1,KPI,Method)}
+            }
+        else if(Method == "three"){ 
+            Spalten<-Boolean*BooleanSapData[,Date,with=F]
+
+            ##apply(Spalten,1,function(x){SapData[[KPI]][,Date][x]})
+            IndustryTs <- sapply(Date,function(i_Date){SapData[[KPI]][[i_Date]][as.logical(Spalten[[i_Date]])]},simplify=F,USE.NAMES = TRUE) ##
+            ##names(IndustryTs) <- Date
+            
+            if(all(sapply(IndustryTs,length)>=NoCompReq)){          ## test whether there are too less observations per company or to less companies for the industry
+                return(IndustryTs)}     ## returns only those companies with enough observations
+                else {CalcIndustryTs(BooleanSapData,SapData,Date,Sic,SicDigits-1,KPI,Method)}
+            }
+            
+            
+            ##apply(SapData[[KPI]][,Date],1,function(x){[x]})
+
+        
+        }   
+ 
+        
+  
+##CalcCorr(Boolen,SapData,7371,7379,"2001-09-18","MV","two")
+        
+##system.time(CalcIndustryTs(Boolen,SapData,Date,6022,SicDigits=4,"MV","two") )
+        
+
+#######*******************************************************************
+## Function um CalcCorr Funktion auf die ganze Tabelle SumTab anzuwenden
+
+CorRow<-function(SumTab,BooleanSapData,SapData,KPI,Method){##data.table
+        N_Values <- nrow(SumTab)
+        ##N_Values <- 50
+        Correlations <- rep(NA,N_Values)
+        ##SicAcquiror,SicTarget,Date,
+        for(n_row in 1:N_Values){
+            Date <- SumTab$Date[n_row]
+            SicAcquiror <- SumTab$Acquiror_Sic[n_row]
+            SicTarget <- SumTab$Target_Sic[n_row]
+  
+            ##Date <- SumTab[n_row,"Date",with=F]
+            ##SicAcquiror <- SumTab[n_row,"Acquiror_Sic",with=F]
+            ##SicTarget <- SumTab[n_row,"Target_Sic",with=F]
+            
+            if(SicAcquiror==SicTarget){Correlations[n_row]<-1;next}
+            if(as.Date(Date)<as.Date("1995-11-30")){Correlations[n_row]<-NA;next}
+  
+            Correlations[n_row] <- CalcCorr(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,KPI,Method)
+            }
+        Correlations <- as.numeric(Correlations)
+        }
+ 
+ 
+##system.time( b<-CorRow(testob,Boolen,SapData,"MV","one",Calc=F))
+
+system.time( b<-CorRow(testob,Boolen,SapData,"MV","two"))
+
+
+######################
+######################
+##### for data Table##
 ######################
 ######################
 
