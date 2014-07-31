@@ -216,6 +216,7 @@ CalcCorr<-function(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,KPI,Method)
         Date<-as.Date(Date)
         Date<-substring(as.Date(Date),1,7)
         Date<-sort(Date)
+        
         ##print(Date)
         AcIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date,SicAcquiror,SicDigits=4,KPI,Method)  ## das mit 1 ist noch nicht gut --> verwirrden
         TaIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date,SicTarget,SicDigits=4,KPI,Method)    ## das mit 1 ist noch nicht gut --> verwirrden
