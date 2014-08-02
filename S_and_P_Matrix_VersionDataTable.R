@@ -1,3 +1,327 @@
+
+setwd("C:/Users/Sebastian Stenzel/Desktop/Neuer Ordner (2)/R input test")
+
+library(data.table)
+testob<-fread("testob.txt",sep=";",stringsAsFactors=F)
+##testob[,Date:=as.Date(Date)]
+##system.time(SaPConst1 <- read.csv("S&Pverlauf_für_R.csv",sep=";",dec=".",colClasses=c("character", "character","character","numeric","character")))
+system.time(SaPConst <- fread("S&Pverlauf_für_R.csv",sep=";",colClasses=c("character", "character","character","numeric","character")))
+
+##SaPConst1$Datum <- as.Date(SaPConst1$Datum)
+##SaPConst1$Datum <- substr(SaPConst1$Datum,1,7)
+SaPConst[,Datum:=substr(as.Date(Datum),1,7)]
+
+
+## Creates empty data frame which list the dates as columns and all the Companies that have been
+## in the S&P 1500 as rows. The data frame will later be filled be TRUE and False values to indicated  
+## the month of membership of the Companies in the S&P 1500
+
+
+SaPcreate <- function(SaPConst = SaPConst,as_char=FALSE){
+
+	ColVec<-sort(unique(SaPConst$Datum),decreasing=F) ## filters the different dates
+	DSCDPos<-!duplicated(SaPConst$DSCD) ## filters the different DSCD
+	##RowVec<-SaPConst$DSCD[!duplicated(SaPConst$DSCD)]
+	RowVec<-SaPConst$DSCD[DSCDPos] 
+	##SicVec<-SaPConst$WC07021[!duplicated(SaPConst$DSCD)]
+	SicVec<-SaPConst$WC07021[DSCDPos] ## filters different Sic positions
+    NamesVec<-SaPConst$Name[DSCDPos]
+	
+	SicVec[nchar((SicVec))==3]<-paste("0",SicVec[nchar((SicVec))==3],sep="")
+
+	RowLeng<-length(RowVec)
+	ColLeng<-length(ColVec)+3+3
+	SaPMat<-matrix(rep(NA,RowLeng*ColLeng),nrow=RowLeng,ncol=ColLeng)
+	SaPMat<-as.data.table(as.data.frame(SaPMat))
+
+	setnames(SaPMat,colnames(SaPMat),c("Name","DSCD","SIC_four","SIC_three","SIC_two","SIC_one",ColVec))
+	##SaPMat[,1]<-NamesVec
+    ##SaPMat[,2]<-RowVec
+	##SaPMat[,3]<-as.factor(SicVec)
+	##SaPMat[,4]<-as.factor(substr(SicVec,1,3))
+	##SaPMat[,5]<-as.factor(substr(SicVec,1,2))
+	##SaPMat[,6]<-as.factor(substr(SicVec,1,1))
+    SaPMat[,Name:=NamesVec]
+    SaPMat[,DSCD:=RowVec]
+	SaPMat[,SIC_four:=as.factor(SicVec)]
+	SaPMat[,SIC_three:=as.factor(substr(SicVec,1,3))]
+	SaPMat[,SIC_two:=as.factor(substr(SicVec,1,2))]
+	SaPMat[,SIC_one:=as.factor(substr(SicVec,1,1))]
+    
+    if(as_char){SaPMat[,{ColVec}:=as.character(rep(NA,RowLeng))]}
+    setkey(SaPMat,"DSCD")
+	SaPMat
+	}
+  
+SaPcreate <- function(SaPConst = SaPConst,as_char=FALSE){
+
+	ColVec<-sort(unique(SaPConst$Datum),decreasing=F) ## filters the different dates
+	DSCDPos<-!duplicated(SaPConst$DSCD) ## filters the different DSCD
+	##RowVec<-SaPConst$DSCD[!duplicated(SaPConst$DSCD)]
+	RowVec<-SaPConst$DSCD[DSCDPos] 
+	##SicVec<-SaPConst$WC07021[!duplicated(SaPConst$DSCD)]
+	SicVec<-SaPConst$WC07021[DSCDPos] ## filters different Sic positions
+    NamesVec<-SaPConst$Name[DSCDPos]
+	
+	SicVec[nchar((SicVec))==3]<-paste("0",SicVec[nchar((SicVec))==3],sep="")
+
+	##RowLeng<-length(RowVec)
+	##ColLeng<-length(ColVec)+3+3
+	##SaPMat<-matrix(rep(NA,RowLeng*ColLeng),nrow=RowLeng,ncol=ColLeng)
+	##SaPMat<-as.data.table(as.data.frame(SaPMat))
+
+	##setnames(SaPMat,colnames(SaPMat),c("Name","DSCD","SIC_four","SIC_three","SIC_two","SIC_one",ColVec))
+	##SaPMat[,1]<-NamesVec
+    ##SaPMat[,2]<-RowVec
+	##SaPMat[,3]<-as.factor(SicVec)
+	##SaPMat[,4]<-as.factor(substr(SicVec,1,3))
+	##SaPMat[,5]<-as.factor(substr(SicVec,1,2))
+	##SaPMat[,6]<-as.factor(substr(SicVec,1,1))
+
+    SaPMat<-data.table(Name=NamesVec)
+    SaPMat[,c("DSCD","SIC_four","SIC_three","SIC_two","SIC_one"):=data.frame((RowVec),SicVec,
+                    substr(SicVec,1,3),substr(SicVec,1,2),substr(SicVec,1,1),stringsAsFactors=F)]
+
+    RowLeng<-length(RowVec)
+
+    if(as_char){SaPMat[,{ColVec}:=as.character(rep(NA,RowLeng))]}
+    else {SaPMat[,{ColVec}:=rep(NA,RowLeng)]}
+    SaPMat[["2012-10"]]<-as.character(NA)
+
+    ##if(as_char){SaPMat[,{ColVec}:=SaPMat[[ColVec]]]}
+    setkey(SaPMat,"DSCD")
+	SaPMat
+	}
+  
+SaPfill <- function(SaPMatrix = SaPMat,SaPConstitution = SaPConst){
+
+	SaPvalues <- function(x){
+	SaPMatrix[[x]] <<- SaPMatrix[,DSCD]%in%SaPConstitution[SaPConstitution$Datum==colnames(SaPMatrix)[x],DSCD]
+	invisible()
+	}
+	
+	for(i in 7:ncol(SaPMatrix)){SaPvalues(i)}
+	##temp <- sapply(6:ncol(SaPMatrix),SaPvalues)
+	##rm(temp)
+
+	SaPMatrix
+	}
+  
+system.time(SaPMat <- SaPcreate(SaPConst))
+##system.time(SaPMat2 <- SaPcreate(SaPConst,as_char=TRUE))
+system.time(SaPMat <- SaPfill(SaPMat, SaPConst))
+##set(SaPMat2,which(SaPMat[["2012-11"]]),j="adsf",value=SaPMat[["DSCD"]][SaPMat[["2012-11"]]])
+##set(SaPMat2,which(SaPMat[["2012-11"]]),j="2012-11",value=SaPMat[["DSCD"]][SaPMat[["2012-11"]]])
+##n_col<-"2012-12"
+##set(SaPMat2,i=which(SaPMat[[n_col]]),j=n_col,value=SaPMat[["DSCD"]][SaPMat[[n_col]]])
+
+##SaPMat2[SaPMat[[9]],(9):=SaPMat[["DSCD"]][SaPMat[[9]]]]
+###***********************************************************************************************************
+## ließt tabelle mit den company properties ein
+SapData_Read <- function(SapMat=SaPMat,CompPropCol="KPI",NaRm = FALSE){
+            
+        SapData <- fread("S&Pkons.csv",sep=";",stringsAsFactors=F)
+        ## SapData2 <- read.csv("S&Pkons.csv",sep=";",dec=".",stringsAsFactors=F)
+        
+        ColNames <- as.character(colnames(SapData)[-c(1:3)])
+        NewColNames <- c(colnames(SapData[,1:3]),substring(ColNames,1,7))
+ 
+        setnames(SapData,ColNames,NewColNames)
+
+        CharLevel <- unique(as.character(SapData[[CompPropCol]]))
+        ##CharLevel <- unique(as.character(SapData2[,"KPI"]))
+        SapData<- merge(SapMat[,c("DSCD","SIC_four"),with=F],SapData,by="DSCD",all=T,sort=F)
+        ##if(NaRm){SapData <- SapData[!is.na(SapData[,"SIC_four"]),]}
+        ##SapData3<- merge(SaPMat[,c("DSCD","SIC_four")],SapData2,by.x="DSCD",by.y="DSCD",all=T,sort=F) 
+       
+        SapData <- sapply(CharLevel,FUN=function(x){y<-SapData[[CompPropCol]]==x;y=SapData[y,]},simplify=F,USE.NAMES = TRUE) 
+        ##SapData <<- SapData
+    
+       ##SapData4  <- sapply(CharLevel,FUN=function(x){y<-SapData2["KPI"]==x;y=SapData2[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE)
+        ##SapData  <- sapply(CharLevel,function(x){y<-SapData[CompPropCol]==x;y=SapData[y,];y[order(y$DSCD),]},simplify=F,USE.NAMES = TRUE)
+        ##SapData5 <- sapply(SapData4,FUN=function(x){merge(SaPMat[,c("DSCD","SIC_four")],x,by.x="DSCD",by.y="DSCD",all=T,sort=F)},simplify=F,USE.NAMES = TRUE)
+       ### SapData <- sapply(SapData,function(x){merge(SaPMat[,c("DSCD","SIC_four")],x,by.x="DSCD",by.y="DSCD",all=T,sort=F)},simplify=F,USE.NAMES = TRUE)
+       ### SapData <- sapply(SapData,function(x){x[order(x$DSCD),]},simplify=F,USE.NAMES = TRUE)
+
+       SapData <- sapply(names(SapData),SapData_Complete,SapData=SapData,simplify=F,USE.NAMES = TRUE)
+       
+       if(NaRm){SapData <- sapply(names(SapData),function(x){SapData[[x]][!is.na(SapData[[x]][,"SIC_four"]),]},simplify=F,USE.NAMES = TRUE)}
+    if(NaRm){SapData <- sapply(names(SapData),function(x){SapData[[x]][!is.na(SapData[[x]][["SIC_four"]]),]},simplify=F,USE.NAMES = TRUE)}
+
+       SapData<<-SapData
+       }
+
+
+       SapData_Complete  <- function(CompPropLevel,SapData){
+            PropTable <- SapData[[CompPropLevel]]
+            MissingDscd <- !is.element(SaPMat$DSCD,PropTable$DSCD)
+
+            if(sum(MissingDscd)==0){
+                   PropTable<-PropTable[order(PropTable$DSCD),]
+                   rownames(PropTable)<-PropTable$DSCD
+                   return(PropTable)
+                   }
+            
+            MissingDscd <- SaPMat[MissingDscd,c("DSCD","SIC_four","Name"),with=F]
+            NaVal <- matrix(rep(NA,nrow(MissingDscd)*(ncol(PropTable)-4)),ncol=ncol(PropTable)-4,nrow=nrow(MissingDscd))
+
+            NewPropTable<-cbind(MissingDscd,"KPI"=CompPropLevel,NaVal)
+
+            setnames(NewPropTable,colnames(NewPropTable),colnames(PropTable))
+            ##colnames(NewPropTable) <- colnames(PropTable)
+            NewPropTable <- rbind(PropTable, NewPropTable)
+            NewPropTable<-NewPropTable[order(NewPropTable$DSCD),]
+            rownames(NewPropTable)<-NewPropTable$DSCD
+            NewPropTable
+            }
+        
+system.time(SapData_Read())
+##system.time(SapData_Read(SapMat=SaPMat,CompPropCol="KPI",NaRm = TRUE))
+
+
+
+##*******************************************************************************************************************
+## neue tabelle die identisch zu  SapData aufgebaut ist aber anstelle der Unternehmenskennzahlen die zugehörigkeit zum SaP 1500 angibt
+######### hier könntest du noch dran arbeiten und erreichen dass SapData in jeder Tabelle der Liste immer alle Unternehmen nennt bzw. für die
+######### für die keine Kennzahlenwerte vorhanden sind NA einträgt dann bräuchstest du nur eine zugehärigkeitstablle T/F die für jede SapData dann 
+######### dieselbe ist
+
+##Boolen<-Compute_SapDataBoolean(SapData,SaPMat)  
+
+Compute_SapDataBoolean<-function(SapData = SapData,SaPMat){         ## hier nochdeoppelte Benennung
+        setkey(SaPMat,DSCD)
+        SapDataBoolean<-SaPMat[SapData$MV$DSCD,]
+
+        SapDataBoolean
+        }           
+
+Boolen<-Compute_SapDataBoolean(SapData,SaPMat)               
+
+### ********************************************************************************************************************
+## zwei funktion die auf einander zugreifen um die Korrelationen aus SumTab zu berechen
+## es wird die SapMat, 
+
+
+CalcCorr<-function(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,KPI,Method){
+        TimePeriod <- 10     ##     das irgendwie vorher definieren
+       
+        Date <- as.POSIXlt(Date)
+        Date$mday <- 15        
+        Date$mon <- Date$mon - (TimePeriod:1)  ## prüfen ob das mit der reihenfolge passt
+        Date<-as.Date(Date)
+        Date<-substring(as.Date(Date),1,7)
+        Date<-sort(Date)
+        print(Date)
+        ##print(Date)
+        AcIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date,SicAcquiror,SicDigits=4,KPI,Method)  ## das mit 1 ist noch nicht gut --> verwirrden
+        TaIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date,SicTarget,SicDigits=4,KPI,Method)    ## das mit 1 ist noch nicht gut --> verwirrden
+        ##print(TaIndustryTs)
+        ##print(AcIndustryTs)
+        ##if(any(is.na(AcIndustryTs,TaIndustryTs))){return(NA)}
+            if(length(AcIndustryTs)==1|length(TaIndustryTs)==1){return(NA)}
+            
+            if(Method=="three"){
+                return(cor(sapply(AcIndustryTs,sum,na.rm=T),sapply(TaIndustryTs,sum,na.rm=T)))
+                }
+            
+        #### hier noch die regression mit dem Marktindex einfügen
+        ##return(list(colMeans(AcIndustryTs[,-(1:2)],na.rm=T),colMeans(TaIndustryTs[,-(1:2)],na.rm=T)))
+        return(cor(colMeans(AcIndustryTs[,-(1:2),with=F],na.rm=T),colMeans(TaIndustryTs[,-(1:2),with=F],na.rm=T)))
+        ##return(list(AcIndustryTs,TaIndustryTs))
+        } 
+ 
+
+CalcIndustryTs<-function(BooleanSapData,SapData,Date,Sic,SicDigits=4,KPI,Method){ ## für eintabelliges BooleanSapData mit data table
+        NoObsReq<-8
+        NoCompReq<-5
+        ##if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+        ##else if(SicDigits=1){}
+            SicL<-nchar(Sic)
+        if (SicL<4){Sic<-paste(paste(rep(0,4-SicL),collapse=""),Sic,sep="")}
+        if(SicDigits==0){return(NA)}
+        ##if(SicDigits==0){return(NA)}
+        ##if else (SicDigits==4){SIC_Col<-SIC_four}
+        ##if else (SicDigits==3){SIC_Col<-SIC_three}
+        ##if else (SicDigits==2){SIC_Col<-SIC_two}
+        ##if else (SicDigits==1){SIC_Col<-SIC_one}
+        
+        ##setkeyv(BooleanSapData,SIC_Col)
+        Boolean <- substring(BooleanSapData$SIC_four,1,SicDigits)==substring(Sic,1,SicDigits)
+        Boolean[is.na(Boolean)]<-FALSE
+
+        if(Method == "one"|Method == "two"){    
+            ##BooleanSapData[[KPI]][,]==Sic
+            if(Method == "one"){   
+                Spalten<-Boolean*BooleanSapData[[max(Date)]]
+                IndustryTs <- SapData[[KPI]][as.logical(Spalten),c("DSCD","SIC_four",Date),with=F]
+                } 
+                else if(Method == "two"){   
+                Spalten<-rowSums(Boolean*BooleanSapData[,Date,with=F])>0
+                ##Spalten <- apply(Boolean*BooleanSapData[,Date,with=F],1,any)
+                IndustryTs <- SapData[[KPI]][as.logical(Spalten),c("DSCD","SIC_four",Date),with=F]
+                }  
+                
+            if(sum(rowSums(!is.na(IndustryTs[,Date,with=F]))>=NoObsReq)>=NoCompReq){          ## test whether there are too less observations per company or to less companies for the industry
+                return(IndustryTs[rowSums(!is.na(IndustryTs[,Date,with=F]))>=NoObsReq,])}     ## returns only those companies with enough observations
+                else {CalcIndustryTs(BooleanSapData,SapData,Date,Sic,SicDigits-1,KPI,Method)}
+            }
+        else if(Method == "three"){ 
+            Spalten<-Boolean*BooleanSapData[,Date,with=F]
+
+            ##apply(Spalten,1,function(x){SapData[[KPI]][,Date][x]})
+            IndustryTs <- sapply(Date,function(i_Date){SapData[[KPI]][[i_Date]][as.logical(Spalten[[i_Date]])]},simplify=F,USE.NAMES = TRUE) ##
+            ##names(IndustryTs) <- Date
+            
+            if(all(sapply(IndustryTs,length)>=NoCompReq)){          ## test whether there are too less observations per company or to less companies for the industry
+                return(IndustryTs)}     ## returns only those companies with enough observations
+                else {CalcIndustryTs(BooleanSapData,SapData,Date,Sic,SicDigits-1,KPI,Method)}
+            }
+            
+            
+            ##apply(SapData[[KPI]][,Date],1,function(x){[x]})
+
+        
+        }   
+ 
+        
+  
+##CalcCorr(Boolen,SapData,7371,7379,"2001-09-18","MV","two")
+        
+##system.time(CalcIndustryTs(Boolen,SapData,Date,6022,SicDigits=4,"MV","two") )
+        
+
+#######*******************************************************************
+## Function um CalcCorr Funktion auf die ganze Tabelle SumTab anzuwenden
+
+CorRow<-function(SumTab,BooleanSapData,SapData,KPI,Method){##data.table
+        N_Values <- nrow(SumTab)
+        ##N_Values <- 50
+        Correlations <- rep(NA,N_Values)
+        ##SicAcquiror,SicTarget,Date,
+        for(n_row in 1:N_Values){
+            Date <- SumTab$Date[n_row]
+            SicAcquiror <- SumTab$Acquiror_Sic[n_row]
+            SicTarget <- SumTab$Target_Sic[n_row]
+  
+            ##Date <- SumTab[n_row,"Date",with=F]
+            ##SicAcquiror <- SumTab[n_row,"Acquiror_Sic",with=F]
+            ##SicTarget <- SumTab[n_row,"Target_Sic",with=F]
+            
+            if(SicAcquiror==SicTarget){Correlations[n_row]<-1;next}
+            if(as.Date(Date)<as.Date("1995-11-30")){Correlations[n_row]<-NA;next}
+  
+            Correlations[n_row] <- CalcCorr(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,KPI,Method)
+            }
+        Correlations <- as.numeric(Correlations)
+        }
+ 
+ 
+##system.time( b<-CorRow(testob,Boolen,SapData,"MV","one",Calc=F))
+
+system.time( b<-CorRow(testob,Boolen,SapData,"MV","two"))
+
 ######################
 ######################
 ##### for data Table##
