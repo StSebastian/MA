@@ -197,50 +197,252 @@ Compute_SapDataBoolean<-function(SapData = SapData,SaPMat){         ## hier noch
 
 Boolen<-Compute_SapDataBoolean(SapData,SaPMat)               
 
+
+
+CalcSalesDevYearly <- function(sap_data = SapData, startDate = "1978-01-01", endDate = "2014-01-01"){
+
+        KPI = "NetSalesRev"
+        startDate <- as.POSIXlt("1978-01-01")
+        endDateOne <- as.POSIXlt(endDate)
+        endDateTwo <- endDateOne
+        endDateTwo$year <- endDateOne$year - 1
+
+        YearsCoveredOne <- as.POSIXlt(endDateOne)
+        YearsCoveredOne$year <- startDate$year:endDateOne$year
+        YearsCoveredOne <- substr(YearsCoveredOne,1,7)
+
+        YearsCoveredTwo<-as.POSIXlt(endDateOne)
+        YearsCoveredTwo$year<- startDate$year:endDateTwo$year
+        YearsCoveredTwo<-substr(YearsCoveredTwo,1,7)
+
+        SalesDev <- data.table(t(diff(t(sap_data[[KPI]][,YearsCoveredOne,with=F]),lag=1)))/sap_data[[KPI]][,YearsCoveredTwo,with=F]
+        SalesDev <- cbind(sap_data[[KPI]][,c("DSCD","SIC_four","Name"),with=F],KPI="SalesDev",SalesDev)
+        
+        
+            InfVal<-data.table(InfCol=which(SalesDev==Inf)%/%nrow(SalesDev)+1)
+            InfVal[,InfRow:=which(SalesDev==Inf)%%nrow(SalesDev)]
+                if(nrow(InfVal)>0){
+                    for(i_row in 1:nrow(InfVal)){
+                    ##SapData$SalesDev[InfVal$InfRow[i_row],InfVal$InfCol[i_row]:=Inf]
+                    SalesDev[InfVal$InfRow[i_row],InfVal$InfCol[i_row]:=NA]
+                    }    
+                }
+        setkey(SalesDev,"DSCD")
+        SapData[["SalesDev"]] <<- SalesDev
+        }
+
+CalcSalesByMV <- function(sap_data = SapData, startDate = "1978-01-01", endDate = "2014-01-01"){
+
+        kpi_one <- "NetSalesRev"
+        kpi_two <- "MV"
+
+        startDate <- as.POSIXlt("1978-01-01")
+        endDateOne <- as.POSIXlt(endDate)
+        endDateTwo <- endDateOne
+        endDateTwo$year <- endDateOne$year - 1
+
+        YearsCoveredOne <- as.POSIXlt(endDateOne)
+        YearsCoveredOne$year <- startDate$year:endDateOne$year
+        YearsCoveredOne <- substr(YearsCoveredOne,1,7)
+
+        YearsCoveredTwo<-as.POSIXlt(endDateOne)
+        YearsCoveredTwo$year<- startDate$year:endDateTwo$year
+        YearsCoveredTwo<-substr(YearsCoveredTwo,1,7)
+
+        SalesByMV <- sap_data[[kpi_one]][,YearsCoveredOne,with=F]/sap_data[[kpi_two]][,YearsCoveredOne,with=F]
+        SalesByMV <- cbind(sap_data[[kpi_one]][,c("DSCD","SIC_four","Name"),with=F],KPI="SalesByMV",SalesByMV)
+        SalesByMV
+        
+            InfVal<-data.table(InfCol=which(SalesByMV==Inf)%/%nrow(SalesByMV)+1)
+            InfVal[,InfRow:=which(SalesByMV==Inf)%%nrow(SalesByMV)]
+            if(nrow(InfVal)>0){
+                for(i_row in 1:nrow(InfVal)){
+                    ##SapData$SalesDev[InfVal$InfRow[i_row],InfVal$InfCol[i_row]:=Inf]
+                    SalesByMV[InfVal$InfRow[i_row],InfVal$InfCol[i_row]:=NA]
+                }    
+            }
+        setkey(SalesByMV,"DSCD")
+        SapData[["SalesByMV"]] <<- SalesByMV
+        }
+
+CalcSalesByMV()      
+CalcSalesDevYearly()  
+
+
+Set_Cor_Options<-function(NoObsReqMonth = 8,NoCompReqMonth = 5,NoObsReqYear= 5, NoCompReqYear= 4,
+                    Period="year",PeriodLengthYear=7,PeriodLengthMonth=10,Method="one",EntityProperty="MV"
+                    ,BreakYear="cut",SpExessCor=F){
+        CorCalcOptions<<-list(Month=data.frame("NoObsReqMonth"=NoObsReqMonth,"NoCompReqMonth"=NoCompReqMonth),
+                Year=data.frame("NoObsReqYear"=NoObsReqYear,"NoCompReqYear"=NoCompReqYear),"Period"=Period,
+                "PeriodLengthYear"=PeriodLengthYear,"PeriodLengthMonth"=PeriodLengthMonth,"Method"=Method,
+                "EntityProperty"=EntityProperty, "BreakYear"=BreakYear,"SpExessCor"=SpExessCor)
+        }
+
+Set_Cor_Options()
+
+
+Calc_Index_Values <- function(sp_composition_dscd = SpCompositionDscd,options = CorCalcOptions){
+        if(options$Period=="year"){period_length <- options$PeriodLengthYear-1}
+        else {period_length <- options$PeriodLengthMonth}
+        sp_index_value_one <- data.table("EntityProperty"=-(period_length:0))
+        sp_index_value_two <- data.table("EntityProperty"=-(period_length:0))
+        sp_index_value_one[,names(SapData[[options$EntityProperty]]):=as.numeric(NA)]
+        sp_index_value_two[,names(SapData[[options$EntityProperty]]):=as.numeric(NA)]
+        
+            YearsMean <- function(Date){
+                Years <- grep(substr(Date,1,4),names(SapData[[options$EntityProperty]]))
+                YearsMean <- mean(rowMeans(SapData[[options$EntityProperty]][sap_composition_period,names(SapData[[options$EntityProperty]])[Years],with=F],na.rm=T),na.rm=T) 
+                ##YearsMean <- mean(as.vector(as.matrix(SapData[[options$EntityProperty]][sap_composition_period,names(SapData[[options$EntityProperty]])[Years],with=F])),na.rm=T) 
+                YearsMean}
+            
+            IntervalMean <- function(index){ 
+               year<<-c(year,names(SapData[[options$EntityProperty]])[index[2]])    
+               interval_index <- names(SapData[[options$EntityProperty]])[(index[1]+1):index[2]]
+               interval_mean <- mean(rowMeans(SapData[[options$EntityProperty]][sap_composition_period,interval_index,with=F],na.rm=T),na.rm=T)  
+               interval_mean}
+        
+        for(col_name in names(SapData[[options$EntityProperty]])[-(1:4)]){
+            if(col_name>"2014" |col_name<"1994-12" ){next}
+                if(TRUE){
+                    ##col_name<-"2013-08"
+                    col_Date<-paste(col_name,"-15",sep="")
+                    col_Date<-as.POSIXlt(col_Date)
+                        if(options$Period=="year"){col_Date$year<-(col_Date$year-period_length):col_Date$year}
+                        else {col_Date$mon<-(col_Date$mon-period_length):col_Date$mon}
+                    col_index <- which(is.element(names(SapData[[options$EntityProperty]]),substr(col_Date,1,7)))}
+                else{
+                    col_index <- which(names(SapData[[options$EntityProperty]])== col_name)
+                    col_index <- (col_index-period_length):col_index}
+            ##sp_index_value_one[[col_name]]<-(colMeans(SapData[[options$EntityProperty]][sp_composition_dscd[[col_name]],(col_index-period_length):col_index,with=F],na.rm=T))
+            sp_index_value_one[[col_name]]<-(colMeans(SapData[[options$EntityProperty]][sp_composition_dscd[[col_name]],col_index,with=F],na.rm=T))
+            ##eigentlich müsstest du (bei monatlich reporteten SPDaten) nicht die z.B. MV für Zeitpunkte (bei Methode year) verwenden sondern die
+            ##means für die jeweiligen Jahren
+            }
+       
+       
+        for(col_name in names(SapData[[options$EntityProperty]])[-(1:4)]){
+            if(col_name>"2014" |col_name<"1994-12" ){next}
+                
+                if(TRUE){
+                    col_Date<-paste(col_name,"-15",sep="")
+                    col_Date<-as.POSIXlt(col_Date)
+                        if(options$Period=="year"){col_Date$year<-(col_Date$year-period_length):col_Date$year}
+                        else {col_Date$mon<-(col_Date$mon-period_length):col_Date$mon}
+                    col_index <- which(is.element(names(SapData[[options$EntityProperty]]),substr(col_Date,1,7)))
+                    sp_col_index <- which(is.element(names(sp_composition_dscd),substr(col_Date,1,7)))##hier könntest du noch erweitern: wenn sp_col_index abgeschnitten wird(<12*period_length) soll er bis zur ersten SP erweitern
+                    if(length(sp_col_index)==0){next}
+                    if( length(sp_col_index)<(period_length+1)){sp_col_index<-c(7,sp_col_index)}
+                    }
+                else{
+                    col_index <- which(names(SapData[[options$EntityProperty]])== col_name)
+                    col_index <- (col_index-period_length):col_index
+                    sp_col_index <- which(is.element(names(sp_composition_dscd),names(SapData[[options$EntityProperty]])[col_index]))}
+            
+            if((length(sp_col_index)<1)){next}
+            sp_col_index <- min( sp_col_index): max ( sp_col_index)
+            ##print(c((length(sp_col_index))/12,col_index))
+            ##print(ceiling(length(sp_col_index)/12))
+            ##if((ceiling(length(sp_col_index)/12)<1)){next}## eigetlich kann diese Bedingung weg und in der Funktion CalcCorr bedingt werden bzw durch die auswahl/nicht auswahl der spalte 
+            ## es macht auch sinn alle anderen optionen in CalcCorr zu bedingen und diese Funktion in CorRow laufen zu lassen weil dann dieselben
+            ## optionen für die Auswahl von Sic Untenehmen in CalcCorrIndustry und SP Unternehmen in Calc_Index_Values gelten
+            ##if((length(sp_col_index)<1)){next}
+            sap_composition_period <- unique(as.vector(as.matrix(sp_composition_dscd[,sp_col_index,with=F])))
+                
+                if(FALSE){ ## computes mean values for each year in the periods
+                    sp_index_value_two[[col_name]]<-sapply(substr(col_Date,1,4),FUN=YearsMean)
+                    }
+                if(FALSE){ ## computes mean values for each period 
+                    col_index<-c((col_index[1]-12),col_index)
+                    sp_index_value_two[[col_name]]<-rollapply(col_index,width=2,FUN=IntervalMean)
+                    }
+                if(TRUE){    
+                    sp_index_value_two[[col_name]]<-colMeans(SapData[[options$EntityProperty]][sap_composition_period,col_index,with=F],na.rm=T)
+                       }
+                       ##eigentlich müsstest du (bei monatlich reporteten SPDaten) nicht die z.B. MV für Zeitpunkte (bei Methode year) verwenden sondern die
+            ##means für die jeweiligen Jahren
+            }
+        list("one"=sp_index_value_one,"two"=sp_index_value_two)
+        }    
+
 ### ********************************************************************************************************************
 ## zwei funktion die auf einander zugreifen um die Korrelationen aus SumTab zu berechen
 ## es wird die SapMat, 
 
 
-CalcCorr<-function(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,KPI,Method){
-        TimePeriod <- 10     ##     das irgendwie vorher definieren
-       
+CalcCorr<-function(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,options=CorCalcOptions,index_values = IndexValues){
+        
+    if(options$Period=="year"){        
+        TimePeriod <- options$PeriodLengthYear     
+        Date <- as.POSIXlt(Date)
+        Date$mday <- 15    
+        Date$year <- Date$year - (TimePeriod:1)  ## prüfen ob das mit der reihenfolge passt
+        Date$mon <- 0
+        Date<-as.Date(Date)
+        Date<-substring(as.Date(Date),1,7)
+        Date<-sort(Date)
+        NoObsReq<-options$Year$NoObsReqYear
+        }
+        
+    else {
+        TimePeriod <- options$PeriodLengthMonth
         Date <- as.POSIXlt(Date)
         Date$mday <- 15        
         Date$mon <- Date$mon - (TimePeriod:1)  ## prüfen ob das mit der reihenfolge passt
         Date<-as.Date(Date)
         Date<-substring(as.Date(Date),1,7)
         Date<-sort(Date)
-        print(Date)
-        ##print(Date)
-        AcIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date,SicAcquiror,SicDigits=4,KPI,Method)  ## das mit 1 ist noch nicht gut --> verwirrden
-        TaIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date,SicTarget,SicDigits=4,KPI,Method)    ## das mit 1 ist noch nicht gut --> verwirrden
+        NoObsReq<-options$Month$NoObsReqMonth
+        }    
+        
+        if(options$Method == "two"){
+            if(options$BreakYear=="cut" | options$BreakYear=="extend"){DateSap<-Date[Date>=1995]}##;Date<-DateSap}
+            if(options$BreakYear=="cut" & length(DateSap) < NoObsReq){return(NA)}
+            }
+        else {DateSap <- Date}    
+        if(length(DateSap)==0){return(NA)}
+        
+        AcIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date,DateSap,SicAcquiror,SicDigits=4,options)  ## das mit 1 ist noch nicht gut --> verwirrden
+        TaIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date,DateSap,SicTarget,SicDigits=4,options)    ## das mit 1 ist noch nicht gut --> verwirrden
         ##print(TaIndustryTs)
         ##print(AcIndustryTs)
         ##if(any(is.na(AcIndustryTs,TaIndustryTs))){return(NA)}
             if(length(AcIndustryTs)==1|length(TaIndustryTs)==1){return(NA)}
             
-            if(Method=="three"){
+            if(options$Method=="three"){
                 return(cor(sapply(AcIndustryTs,sum,na.rm=T),sapply(TaIndustryTs,sum,na.rm=T)))
                 }
+                
+        AcIndustryTs <- colMeans(AcIndustryTs[,-(1:2),with=F],na.rm=T)
+        TaIndustryTs <- colMeans(TaIndustryTs[,-(1:2),with=F],na.rm=T)
+        
+        if(options$SpExessCor){    
+            x <- index_values[[options$Method]][[max(DateSap)]]
+            coefficient <- coef(lm(AcIndustryTs~x))
+            AcIndustryTs <- (AcIndustryTs-(coefficient["(Intercept)"]-coefficient["x"]*x))
+            coefficient <- coef(lm(TaIndustryTs~x))
+            TaIndustryTs <- (TaIndustryTs-(coefficient["(Intercept)"]-coefficient["x"]*x))
+            ## noch gucken ob das intercept egal ist
+            }
             
+        
         #### hier noch die regression mit dem Marktindex einfügen
         ##return(list(colMeans(AcIndustryTs[,-(1:2)],na.rm=T),colMeans(TaIndustryTs[,-(1:2)],na.rm=T)))
-        return(cor(colMeans(AcIndustryTs[,-(1:2),with=F],na.rm=T),colMeans(TaIndustryTs[,-(1:2),with=F],na.rm=T)))
+        return(cor(AcIndustryTs,TaIndustryTs))
+        ##return(cor(colMeans(AcIndustryTs[,-(1:2),with=F],na.rm=T),colMeans(TaIndustryTs[,-(1:2),with=F],na.rm=T)))
         ##return(list(AcIndustryTs,TaIndustryTs))
         } 
  
 
-CalcIndustryTs<-function(BooleanSapData,SapData,Date,Sic,SicDigits=4,KPI,Method){ ## für eintabelliges BooleanSapData mit data table
-        NoObsReq<-8
-        NoCompReq<-5
+CalcIndustryTs<-function(BooleanSapData,SapData,Date,DateSap,Sic,SicDigits=4,options){ ## für eintabelliges BooleanSapData mit data table
+        if(options$Period=="year"){NoObsReq<-options$Year$NoObsReqYear; NoCompReq<-options$Year$NoCompReqYear}
+        else {NoObsReq<-options$Month$NoObsReqMonth; NoCompReq<-options$Month$NoCompReqMonth}
         ##if(SicDigits=1){}
         ##else if(SicDigits=1){}
         ##else if(SicDigits=1){}
         ##else if(SicDigits=1){}
             SicL<-nchar(Sic)
-        if (SicL<4){Sic<-paste(paste(rep(0,4-SicL),collapse=""),Sic,sep="")}
-        if(SicDigits==0){return(NA)}
+        if (SicL<4){Sic <- paste(paste(rep(0,4-SicL),collapse=""),Sic,sep="")}
+        if (SicDigits==0){return(NA)}
         ##if(SicDigits==0){return(NA)}
         ##if else (SicDigits==4){SIC_Col<-SIC_four}
         ##if else (SicDigits==3){SIC_Col<-SIC_three}
@@ -249,34 +451,34 @@ CalcIndustryTs<-function(BooleanSapData,SapData,Date,Sic,SicDigits=4,KPI,Method)
         
         ##setkeyv(BooleanSapData,SIC_Col)
         Boolean <- substring(BooleanSapData$SIC_four,1,SicDigits)==substring(Sic,1,SicDigits)
-        Boolean[is.na(Boolean)]<-FALSE
+        Boolean[is.na(Boolean)] <- FALSE
 
-        if(Method == "one"|Method == "two"){    
+        if(options$Method == "one"|options$Method == "two"){    
             ##BooleanSapData[[KPI]][,]==Sic
-            if(Method == "one"){   
-                Spalten<-Boolean*BooleanSapData[[max(Date)]]
-                IndustryTs <- SapData[[KPI]][as.logical(Spalten),c("DSCD","SIC_four",Date),with=F]
+            if(options$Method == "one"){   
+                Spalten <- Boolean*BooleanSapData[[max(DateSap)]]
+                IndustryTs <- SapData[[options$EntityProperty]][as.logical(Spalten),c("DSCD","SIC_four",Date),with=F]
                 } 
-                else if(Method == "two"){   
-                Spalten<-rowSums(Boolean*BooleanSapData[,Date,with=F])>0
+            else if(options$Method == "two"){   
+                Spalten<-rowSums(Boolean*BooleanSapData[,DateSap,with=F]) > 0
                 ##Spalten <- apply(Boolean*BooleanSapData[,Date,with=F],1,any)
-                IndustryTs <- SapData[[KPI]][as.logical(Spalten),c("DSCD","SIC_four",Date),with=F]
+                IndustryTs <- SapData[[options$EntityProperty]][as.logical(Spalten),c("DSCD","SIC_four",Date),with=F]
                 }  
                 
-            if(sum(rowSums(!is.na(IndustryTs[,Date,with=F]))>=NoObsReq)>=NoCompReq){          ## test whether there are too less observations per company or to less companies for the industry
-                return(IndustryTs[rowSums(!is.na(IndustryTs[,Date,with=F]))>=NoObsReq,])}     ## returns only those companies with enough observations
-                else {CalcIndustryTs(BooleanSapData,SapData,Date,Sic,SicDigits-1,KPI,Method)}
+            if(sum(rowSums(!is.na(IndustryTs[,Date,with=F])) >= NoObsReq) >= NoCompReq){          ## test whether there are too less observations per company or to less companies for the industry
+                return(IndustryTs[rowSums(!is.na(IndustryTs[,Date,with=F])) >= NoObsReq,])}     ## returns only those companies with enough observations
+            else {CalcIndustryTs(BooleanSapData,SapData,Date,DateSap,Sic,SicDigits-1,options)}
             }
-        else if(Method == "three"){ 
-            Spalten<-Boolean*BooleanSapData[,Date,with=F]
+         else if(options$Method == "three"){
+            Spalten <- Boolean*BooleanSapData[,Date,with=F]
 
-            ##apply(Spalten,1,function(x){SapData[[KPI]][,Date][x]})
-            IndustryTs <- sapply(Date,function(i_Date){SapData[[KPI]][[i_Date]][as.logical(Spalten[[i_Date]])]},simplify=F,USE.NAMES = TRUE) ##
+            ##apply(Spalten,1,function(x){SapData[[options$EntityProperty]][,Date][x]})
+            IndustryTs <- sapply(Date,function(i_Date){SapData[[options$EntityProperty]][[i_Date]][as.logical(Spalten[[i_Date]])]},simplify=F,USE.NAMES = TRUE) ##
             ##names(IndustryTs) <- Date
             
-            if(all(sapply(IndustryTs,length)>=NoCompReq)){          ## test whether there are too less observations per company or to less companies for the industry
+        if(all(sapply(IndustryTs,length)>=NoCompReq)){          ## test whether there are too less observations per company or to less companies for the industry
                 return(IndustryTs)}     ## returns only those companies with enough observations
-                else {CalcIndustryTs(BooleanSapData,SapData,Date,Sic,SicDigits-1,KPI,Method)}
+        else {CalcIndustryTs(BooleanSapData,SapData,Date,DateSap,Sic,SicDigits-1,options)}
             }
             
             
@@ -295,7 +497,7 @@ CalcIndustryTs<-function(BooleanSapData,SapData,Date,Sic,SicDigits=4,KPI,Method)
 #######*******************************************************************
 ## Function um CalcCorr Funktion auf die ganze Tabelle SumTab anzuwenden
 
-CorRow<-function(SumTab,BooleanSapData,SapData,KPI,Method){##data.table
+CorRow<-function(SumTab,BooleanSapData,SapData,options){##data.table
         N_Values <- nrow(SumTab)
         ##N_Values <- 50
         Correlations <- rep(NA,N_Values)
@@ -309,10 +511,10 @@ CorRow<-function(SumTab,BooleanSapData,SapData,KPI,Method){##data.table
             ##SicAcquiror <- SumTab[n_row,"Acquiror_Sic",with=F]
             ##SicTarget <- SumTab[n_row,"Target_Sic",with=F]
             
-            if(SicAcquiror==SicTarget){Correlations[n_row]<-1;next}
-            if(as.Date(Date)<as.Date("1995-11-30")){Correlations[n_row]<-NA;next}
+            if(SicAcquiror==SicTarget){Correlations[n_row] <- 1;next}
+            if(as.Date(Date) < as.Date("1995-11-30")){Correlations[n_row] <- NA;next}
   
-            Correlations[n_row] <- CalcCorr(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,KPI,Method)
+            Correlations[n_row] <- CalcCorr(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,options,IndexValues)
             }
         Correlations <- as.numeric(Correlations)
         }
