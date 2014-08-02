@@ -221,17 +221,17 @@ SaPcreate <- function(SaPConst = SaPConst,as_char=FALSE){
 	##SaPMat[,4]<-as.factor(substr(SicVec,1,3))
 	##SaPMat[,5]<-as.factor(substr(SicVec,1,2))
 	##SaPMat[,6]<-as.factor(substr(SicVec,1,1))
-    print("c")
+
     SaPMat<-data.table(Name=NamesVec)
     SaPMat[,c("DSCD","SIC_four","SIC_three","SIC_two","SIC_one"):=data.frame((RowVec),SicVec,
                     substr(SicVec,1,3),substr(SicVec,1,2),substr(SicVec,1,1),stringsAsFactors=F)]
-    print("a")
+
     RowLeng<-length(RowVec)
 
     if(as_char){SaPMat[,{ColVec}:=as.character(rep(NA,RowLeng))]}
     else {SaPMat[,{ColVec}:=rep(NA,RowLeng)]}
     SaPMat[["2012-10"]]<-as.character(NA)
-    print("b")
+
     ##if(as_char){SaPMat[,{ColVec}:=SaPMat[[ColVec]]]}
     setkey(SaPMat,"DSCD")
 	SaPMat
