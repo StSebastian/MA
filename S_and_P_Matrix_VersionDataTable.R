@@ -281,9 +281,26 @@ Set_Cor_Options<-function(NoObsReqMonth = 8,NoCompReqMonth = 5,NoObsReqYear= 5, 
 Set_Cor_Options()
 
 
+IndexCompositionDscd <- function(sap_mat=SaPMat){
+        sap_mat_char <- SaPcreate(SaPConst,as_char=TRUE)
+        ##setkey(sap_mat,"DSCD")
+        ##set(SaPMat2,which(SaPMat[["2012-11"]]),j="2012-11",value=SaPMat[["DSCD"]][SaPMat[["2012-11"]]])
+        ##for (a in 7:ncol(sap_mat)){
+        ##sap_mat_char[["2012-10"]]<-as.character(NA)
+        for (i_col in names(sap_mat)[-(1:6)]){
+        
+            set(sap_mat_char,i=which(sap_mat[[i_col]]),j=i_col,value=sap_mat[["DSCD"]][sap_mat[[i_col]]])
+            ##set(SaPMat2,i=which(SaPMat[[n_col]]),j=n_col,value=SaPMat[["DSCD"]][SaPMat[[n_col]]])
+            ##sap_mat_char[sap_mat[[a]], ({a}):=sap_mat[["DSCD"]][sap_mat[[a]]]]
+            ##SaPMat2[SaPMat[[a]], ({a}):=SaPMat[["DSCD"]][SaPMat[[a]]]]
+            ##sap_mat[i,7:ncol(sap_mat),with=F] <- ifelse(sap_mat[i,7:ncol(sap_mat),with=F],i,NA) 
+            }
+        sap_mat_char
+        }
+
 Calc_Index_Values <- function(sp_composition_dscd = SpCompositionDscd,options = CorCalcOptions){
         if(options$Period=="year"){period_length <- options$PeriodLengthYear-1}
-        else {period_length <- options$PeriodLengthMonth}
+        else {period_length <- options$PeriodLengthMonth-1}
         sp_index_value_one <- data.table("EntityProperty"=-(period_length:0))
         sp_index_value_two <- data.table("EntityProperty"=-(period_length:0))
         sp_index_value_one[,names(SapData[[options$EntityProperty]]):=as.numeric(NA)]
@@ -417,6 +434,8 @@ CalcCorr<-function(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,options=Cor
         
         if(options$SpExessCor){    
             x <- index_values[[options$Method]][[max(DateSap)]]
+            ttt<<-x
+            ttt1<<-AcIndustryTs
             coefficient <- coef(lm(AcIndustryTs~x))
             AcIndustryTs <- (AcIndustryTs-(coefficient["(Intercept)"]-coefficient["x"]*x))
             coefficient <- coef(lm(TaIndustryTs~x))
@@ -503,6 +522,7 @@ CorRow<-function(SumTab,BooleanSapData,SapData,options){##data.table
         Correlations <- rep(NA,N_Values)
         ##SicAcquiror,SicTarget,Date,
         for(n_row in 1:N_Values){
+            print(n_row)
             Date <- SumTab$Date[n_row]
             SicAcquiror <- SumTab$Acquiror_Sic[n_row]
             SicTarget <- SumTab$Target_Sic[n_row]
@@ -522,7 +542,7 @@ CorRow<-function(SumTab,BooleanSapData,SapData,options){##data.table
  
 ##system.time( b<-CorRow(testob,Boolen,SapData,"MV","one",Calc=F))
 
-system.time( b<-CorRow(testob,Boolen,SapData,"MV","two"))
+ system.time( b<-CorRow(testob,Boolen,SapData,CorCalcOptions)) 
 
 ######################
 ######################
@@ -548,7 +568,7 @@ CalcCorr<-function(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,KPI,Method)
         ##if(length(DateSap)<5){return(NA)} 
         ##if(length(DateSap)==0){return(NA)}
         DateSap <- Date
-        print(Date)
+
         ##print(Date)
         AcIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date, DateSap,SicAcquiror,SicDigits=4,KPI,Method)  ## das mit 1 ist noch nicht gut --> verwirrden
         TaIndustryTs <- CalcIndustryTs(BooleanSapData,SapData,Date, DateSap,SicTarget,SicDigits=4,KPI,Method)    ## das mit 1 ist noch nicht gut --> verwirrden
@@ -641,6 +661,7 @@ CorRow<-function(SumTab,BooleanSapData,SapData,KPI,Method){##data.table
         Correlations <- rep(NA,N_Values)
         ##SicAcquiror,SicTarget,Date,
         for(n_row in 1:N_Values){
+            print(n_row)
             Date <- SumTab$Date[n_row]
             SicAcquiror <- SumTab$Acquiror_Sic[n_row]
             SicTarget <- SumTab$Target_Sic[n_row]
@@ -651,7 +672,7 @@ CorRow<-function(SumTab,BooleanSapData,SapData,KPI,Method){##data.table
             
             if(SicAcquiror==SicTarget){Correlations[n_row]<-1;next}
             if(as.Date(Date)<as.Date("1995-11-30")){Correlations[n_row]<-NA;next}
-            print(n_row)
+
             Correlations[n_row] <- CalcCorr(BooleanSapData,SapData,SicAcquiror,SicTarget,Date,KPI,Method)
             }
         Correlations <- as.numeric(Correlations)
