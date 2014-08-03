@@ -1,9 +1,9 @@
-## In diesem R Code wird aus den Dateien “…”, “…..” und „…“ eine 
-## Tabelle „…“ erstellt, die für jeden M&A die Impliziten Kapitalkosten 
-## vor und nach dem M&A berechnet. Mit dieser Informationr kann später
-## untersucht werden, ob sich die ICC vor (prea ICC) M&A von denen danach
-## (post ICC) unterscheiden. Die Tabelle wird später noch durch 
-## Berechnungen in dem R-Code „….“ ergänzt.
+## In diesem R Code wird aus den Dateien ICC_Dataset.txt, SDC_Dataset.csv 
+## und COMPANY_Dataset.csv eine Tabelle MaA_Table erstellt, die für jeden M&A 
+## die Impliziten Kapitalkosten vor und nach dem M&A berechnet. Mit dieser 
+## Informationr kann später untersucht werden, ob sich die ICC vor (prea ICC) 
+## M&A von denen danach(post ICC) unterscheiden. Die Tabelle wird später 
+## noch durch Berechnungen in dem R-Code Correlation_Computation.r ergänzt.
 
 ## Die ICCs werden nach Marktwerten und entsprechend der erworbenen
 ## Unternehmensanteile gewichtet. Weil es keinen bestimmten Zeitpunkt vor 
@@ -61,11 +61,9 @@
 ##      einer von der Funktion Data_Prop() erstellten Liste gebündelt.
 
 ## 3.	Weitere Funktionen zur Modifizierung der Datensätze
-## 3.1	Sdc_Adjust(): Modifiziert die Datentypen in den Spalten des SDC 
-##      Datensatzes.
-## 3.2	Icc_Conv_Date(): Modifiziert die Datentypen in den Spalten des 
-##      ICC Datensatzes. 
-## 3.3 	Icc_Prop_Charac_List_Set(): Untersucht an welchen Positionen im 
+## 3.1	Dataset_Adjust(): Modifiziert die Datentypen in den Spalten des SDC 
+##      und ICC Datensatzes.
+## 3.2 	Company_Prop_List_Set(): Untersucht an welchen Positionen im 
 ##      Datensatz für Unternehmensdaten (COMPANY-Datensatz) welche 
 ##      Unternehmensdaten MV, Sales etc. auftauchen und gibt eine 
 ##      Liste mit logischen Datensätzen für jeden Unternehmensdatentyp zurück.
@@ -109,15 +107,15 @@ library(data.table)
 #####   Set und Get auf die Liste der Datensätze zugegriffen 
 #####   werden kann.
 Read_Table<-function(){
-        setwd("C:/Users/Sebastian Stenzel/Desktop/Neuer Ordner (2)/R input test")
+        setwd("C:/Users/Sebastian Stenzel/Desktop/Neuer Ordner (2)/R input test/ICC_Data")
 
-        SdcTab <- fread("SDCtest.csv",sep=";",colClasses=c("character", "numeric", "character", "character",
+        SdcData <- fread("SDC_Dataset.csv",sep=";",colClasses=c("character", "numeric", "character", "character",
                                 "character", "character", "character", "character", "character", "character", 
                                 "character", "character", "character", "numeric", "numeric"))
 
-        IccTab<-fread("IccTabelle.txt")                    
+        IccData<-fread("ICC_Dataset.txt")                    
                             
-        ##IccTab2<-fread("ICC_dataSet_2012-05-29_12_45_06.txt.txt",sep=";",stringsAsFactors=F,##dec=",",
+        ##IccData2<-fread("ICC_dataSet_2012-05-29_12_45_06.txt.txt",sep=";",stringsAsFactors=F,##dec=",",
         ##                 colClasses=c("integer", "character", "numeric", "character", "numeric", "integer",
         ##                    "numeric", "numeric", "character", "integer", "character", "Date", "numeric", 
         ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "Date", "Date", "numeric", 
@@ -128,9 +126,9 @@ Read_Table<-function(){
         ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", 
         ##                    "numeric", "numeric", "numeric"))
    
-        CompanyData <- fread("M&Akons.csv",header=T,stringsAsFactors=F,sep=";")
+        CompanyData <- fread("COMPANY_Dataset.csv",header=T,stringsAsFactors=F,sep=";")
 
-        TableList <-list("SDC" = SdcTab, "ICC" = IccTab, "COMPANY" = CompanyData)
+        TableList <-list("SDC" = SdcData, "ICC" = IccData, "COMPANY" = CompanyData)
         
         ## Zugriffsfunktionen
         Get <- function()TableList
@@ -140,7 +138,7 @@ Read_Table<-function(){
         TableStored <<- list(Set = Set, Get = Get)
         }
 
-##	Aufruf von Read_Table ->  Liste TableStored wird ohne Zuweisung erstellt
+##	Aufruf von Read_Table() ->  Liste TableStored wird ohne Zuweisung erstellt
     Read_Table()    
 
 ##1.2   Name_Comp_Table(): Benennt Spalten des CompanyData Datensatzes nach Jahr und Monat 
@@ -181,7 +179,7 @@ Name_Comp_Table <- function(TableStored = TableStored, NChar = 5 , StartDate = "
     
 ##2.1 	Sdc_Set(): Funktion die Spaltennamen für SDC-Tabelle zentral 
 #####   speichert. Die Funktion wird später nicht direkt aufgerufen 
-#####   sondern mit anderen „Set()“-Funktionen durch die Funktion 
+#####   sondern mit anderen "Set()"-Funktionen durch die Funktion 
 #####   Data_Prop() in der Liste DataPropList gespeichert    
 Sdc_Set <- function(DatCol = "SpDate", AcCol = "SpAcDscd", TaCol = "SpTaDscd",
                             ShareCol = "SpShAcq", SicAcCol = "SpAcSic", 
@@ -193,7 +191,7 @@ Sdc_Set <- function(DatCol = "SpDate", AcCol = "SpAcDscd", TaCol = "SpTaDscd",
 
 ##2.2	Icc_Set(): Funktion die Spaltennamen für ICC-Tabelle zentral 
 #####   speichert. Die Funktion wird später nicht direkt aufgerufen 
-#####   sondern mit anderen „Set()“-Funktionen durch die Funktion 
+#####   sondern mit anderen "Set()"-Funktionen durch die Funktion 
 #####   Data_Prop() in der Liste DataPropList gespeichert
 Icc_Set <- function(DatCol = "Datum", DscdCol = "Company_Code", 
                         IccCol = "ICC_CT"){
@@ -203,9 +201,9 @@ Icc_Set <- function(DatCol = "Datum", DscdCol = "Company_Code",
 
 ##2.3	Company_Set()Funktion die Spaltennamen für CompanyData-Tabelle 
 #####   zentral speichert. Die Funktion wird später nicht direkt aufgerufen 
-#####   sondern mit anderen „Set()“-Funktionen durch die Funktion Data_Prop() 
+#####   sondern mit anderen "Set()"-Funktionen durch die Funktion Data_Prop() 
 #####   in der Liste DataPropList gespeichert
-Company_Set <- function(DscdCol = "DSCD", CharacCol = "KPI",   
+Company_Set <- function(DscdCol = "DSCD", CharacCol = "Properties",   
                          SicCol = "WC07021",CharacList = NULL){	
         if(!is.null(CharacList)){                                      
             COMPCol  <- DataPropList$Get()$COMPANY
@@ -305,9 +303,9 @@ Data_Prop <- function(){
     
 ## 3.	Weitere Modifizierung der Datensätze durch Information aus Schritt 2.
     
-##3.1	Sdc_Adjust(): Modifiziert die Datentypen für SDC und ICC Datensatz 
+##3.1	Dataset_Adjust(): Modifiziert die Datentypen für SDC und ICC Datensatz 
 #####   sowie die Spaltennamen des SDC Datensatz    
-Sdc_Adjust <- function(TableStored,DataPropList){
+Dataset_Adjust <- function(TableStored,DataPropList){
 		
 		SdcTable <- TableStored$Get()$SDC
         IccTable <- TableStored$Get()$ICC
@@ -327,7 +325,7 @@ Sdc_Adjust <- function(TableStored,DataPropList){
 		SdcTable[,SpShAcq:= SpShAcq/100]
         
         IccDatCol <- DataPropList$Get()$ICC$DatCol
-        IccTable[,{IccDatCol}:=as.Date(strptime(IccTable[[IccDatCol]],"%Y-%m-%d"))]     
+        IccTable[,{IccDatCol}:=substr(as.Date(strptime(IccTable[[IccDatCol]],"%Y-%m-%d")),1,7)]     
 		
         ## Überschreibung alter Datensätze
         Tables <- TableStored$Get()
@@ -335,35 +333,15 @@ Sdc_Adjust <- function(TableStored,DataPropList){
 		TableStored$Set(Tables)
 		}
 
-##  Aufruf von Sdc_Adjust()        
-    Sdc_Adjust(TableStored,DataPropList)          
+##  Aufruf von Dataset_Adjust()        
+    Dataset_Adjust(TableStored,DataPropList)          
         
-## 3.2	Icc_Conv_Date(): Modifiziert die Datentypen in den Spalten des 
-##      ICC Datensatzes.       
-Icc_Conv_Date <- function(DataPropList, TableStored){
-
-		IccTable <- TableStored$Get()$ICC
-		IccProp <- DataPropList$Get()$ICC
-		DatCol <- IccProp$DatCol
-		IccDatCol <- DataPropList$Get()$ICC$DatCol  ##X
-        
-        IccTable[,{IccDatCol}:=substr(IccTable[[IccDatCol]],1,7)]
-        IccDatCol <- DataPropList$Get()$ICC$DatCol                        
-
-        ## Überschreibung alter Datensätze
-		Tables <- TableStored$Get()
-		Tables$ICC <- IccTable
-		TableStored$Set(Tables)
-		}
-        
-Icc_Conv_Date(DataPropList, TableStored)
-
-##3.3   Icc_Prop_Charac_List_Set(): untersucht an welchen Positionen im 
+##3.2   Company_Prop_List_Set(): untersucht an welchen Positionen im 
 #####   Datensatz für Unternehmensdaten welche Unternehmensdaten MV, Sales etc.
 #####   auftauchen und gibt eine Liste mit logischen Datensätzen für jeden
 #####   Unternehmensdatentyp zurück. Dieser wird an DataPropList angehängt.
 #####   Die Aktion soll später bei den Berechnungen Zeit einsparen.
-Icc_Prop_Charac_List_Set <- function(TableStored = TableStored, DataPropList){
+Company_Prop_List_Set <- function(TableStored = TableStored, DataPropList){
 		
 		CompanyTable <- TableStored$Get()$COMPANY 
 		CompProp  <- DataPropList$Get()$COMPANY
@@ -658,8 +636,8 @@ Compute_MandA_Table <- function(DataPropList,TableStored){
         nobs <- ((icc_period_data$Far - icc_period_data$Close+1)-icc_period_data$Size+1)
         MaA_Table <- as.data.frame(matrix(rep(NA,(7+6*nobs)*laenge),nrow=laenge,ncol=7+6*nobs))
         
-        ## Aufruf von Funktion 3.3
-        Icc_Prop_Charac_List_Set(TableStored, DataPropList) 
+        ## Aufruf von Funktion 3.2
+        Company_Prop_List_Set(TableStored, DataPropList) 
         
         ## das Rückgabeobjekt von Data_Retrieve() muss vor Verwendung bereits existieren
         AccessData <<- Data_Retrieve ()
@@ -728,6 +706,6 @@ Sic_Separation <- function(SummarySdc, AcSicCol = "Acquiror_Sic", TaSicCol = "Ta
 			SicCol
 			}
             
-system.time(testob<-Compute_MandA_Table(DataPropList,TableStored)) 
+system.time(MaA_Table<-Compute_MandA_Table(DataPropList,TableStored)) 
 
 ##
