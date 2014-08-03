@@ -45,20 +45,20 @@
 ## 2.	Zur Erstellung eines Verzeichnisses, in dem für alle drei 
 ##      Tabellen die relevanten Spaltennamen festgehalten werden, aber
 ##      auch die Details für die Zeitfenster zur ICC Bestimmung definiert 
-##      werden. Diese Funktionen werden ihrerseits durch die Funktion Col_Prop() 
+##      werden. Diese Funktionen werden ihrerseits durch die Funktion Data_Prop() 
 ##      in einer Liste gebündelt.
 ## 2.1 	Sdc_Set(): Speichert Spaltennamen zur SDC-Tabelle
 ## 2.2	Icc_Set(): Speichert Spaltennamen zur ICC-Tabelle
 ## 2.3	Company_Set(): Speichert Spaltennamen der Tabelle mit 
 ##      Unternehmensdaten (COMPANY-Datensatz)
-## 2.4	Event_W_set(): Bestimmt Lage desr prae und post Zeitinervalle
+## 2.4	Icc_Period_Set(): Bestimmt Lage desr prae und post Zeitinervalle
 ##      zur ICC Bestimmung, sowie die Größe des innerhalb dieses Zeitraumes 
 ##      rollierenden Berechnungsfensters.
-## 2.5	Extend_Fun(): Wird in Event_W_set() aufgerufen und passt die Länge 
+## 2.5	Extend_Fun(): Wird in Icc_Period_Set() aufgerufen und passt die Länge 
 ##      des Datensatzes mit Untenehmensdaten an, falls durch die Größe des 
 ##      post Zeitfensters die Länge nicht ausreicht.
-## 2.6 	Col_Prop(): Die Funktion 2.1 bis 2.4 werden als Listenelemente in 
-##      einer von der Funktion Col_Prop() erstellten Liste gebündelt.
+## 2.6 	Data_Prop(): Die Funktion 2.1 bis 2.4 werden als Listenelemente in 
+##      einer von der Funktion Data_Prop() erstellten Liste gebündelt.
 
 ## 3.	Weitere Funktionen zur Modifizierung der Datensätze
 ## 3.1	Sdc_Adjust(): Modifiziert die Datentypen in den Spalten des SDC 
@@ -71,31 +71,31 @@
 ##      Liste mit logischen Datensätzen für jeden Unternehmensdatentyp zurück.
 
 ## 4.	Funktionen zum Zugriff auf Datesätze, sowie der Bearbeitung der Daten
-##      bis zur Berechnung der ICC. Ähnlich Col_Prop() werden die 
+##      bis zur Berechnung der ICC. Ähnlich Data_Prop() werden die 
 ##      Funktionen in einer Liste (durch die Funktion Data_Retrieve()) 
 ##      gebündelt.
 ## 4.1	Sdc_Get(): Entnimmt Daten zu M&A aus SDC Datensatz und berechnet 
-##      gleichzeitig durch Zugriff auf Event_W_Get() die Zeifenster zur ICC 
+##      gleichzeitig durch Zugriff auf Icc_Period_Get() die Zeifenster zur ICC 
 ##      Berechnung.
-## 4.2	Event_W_Get(): Berechnet für ein übergebenes Datum die post 
+## 4.2	Icc_Period_Get(): Berechnet für ein übergebenes Datum die post 
 ##      und prae M&A Zeitintervalle. 
 ## 4.3	Icc_Get(): Entnimmt für die Zeitfenster und Datastream Codes der 
 ##      M&A Partner die ICC-Werte aus dem ICC Datensatz und berechnet die
 ##      rollierenden post und prae ICCs.
-## 4.4	Comp_Get(): Entnimmt für die Zeitfenster und Datastream Codes der 
+## 4.4	Company_Get(): Entnimmt für die Zeitfenster und Datastream Codes der 
 ##      M&A Partner die Marktwerte aus dem COMPANY-Datensatz. 
 ##      Mit diesen können später die gewichtete ICCs bestimmt werden. Auch
 ##      hier werden die MVs rollierend berechnet.
 ## 4.5	Data_Retrieve(): Erstellt Liste über die auf die Funktionen 4.1, 
 ##      4.3, 4.4 zugegriffen werden kann.
 
-## 5. 	Die Funktionen SumTab() erstellt die finale Tabelle die für jeden 
+## 5. 	Die Funktionen Compute_MandA_Table() erstellt die finale Tabelle die für jeden 
 ##      M&A die ICCs von Acquiror und Target vor bzw. für Target auch nach 
 ##      M&A angibt und aus diesen später die Differenz bildet
-## 5.1	SumTab(): Ruft für jeden M&A Sdc_Get(),Icc_Get() und Comp_Get() auf, 
+## 5.1	Compute_MandA_Table(): Ruft für jeden M&A Sdc_Get(),Icc_Get() und Company_Get() auf, 
 ##      berechnet aus den erhaltenen Informationen alle ICCs zum M&A und gibt 
 ##      die Daten in einer neuen Tabelle zurück.
-## 5.2	Sic_Separation(): Wird als Teil von SumTab aufgerufen und fügt eine 
+## 5.2	Sic_Separation(): Wird als Teil von Compute_MandA_Table aufgerufen und fügt eine 
 ##      zusätzliche Spalte zur Differenzierung von M&A nach SIC-Unterschieden an.
 
 
@@ -106,7 +106,7 @@ library(data.table)
 
 ##1.1   Read_Table(): Liest SDC, ICC und CompanyData Datensätze ein. 
 #####   Erstellt Funktionsliste TableStored über dessen Funktionen 
-#####   setTable und Get auf die Liste der Datensätze zugegriffen 
+#####   Set und Get auf die Liste der Datensätze zugegriffen 
 #####   werden kann.
 Read_Table<-function(){
         setwd("C:/Users/Sebastian Stenzel/Desktop/Neuer Ordner (2)/R input test")
@@ -128,16 +128,16 @@ Read_Table<-function(){
         ##                    "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", 
         ##                    "numeric", "numeric", "numeric"))
    
-        CompanyTab <- fread("M&Akons.csv",header=T,stringsAsFactors=F,sep=";")
+        CompanyData <- fread("M&Akons.csv",header=T,stringsAsFactors=F,sep=";")
 
-        TableList <-list("SDC" = SdcTab, "ICC" = IccTab, "COMPANY" = CompanyTab)
+        TableList <-list("SDC" = SdcTab, "ICC" = IccTab, "COMPANY" = CompanyData)
         
         ## Zugriffsfunktionen
         Get <- function()TableList
-        setTable <- function(NewTable)TableList <<- NewTable	
+        Set <- function(NewTable)TableList <<- NewTable	
         
         ## Erstellt Liste
-        TableStored <<- list(setTable = setTable, Get = Get)
+        TableStored <<- list(Set = Set, Get = Get)
         }
 
 ##	Aufruf von Read_Table ->  Liste TableStored wird ohne Zuweisung erstellt
@@ -167,7 +167,7 @@ Name_Comp_Table <- function(TableStored = TableStored, NChar = 5 , StartDate = "
         ## Überschreibung alter Datensätze
 		Tables <- TableStored$Get()
 		Tables$COMPANY <- CompanyTable
-		TableStored$setTable(Tables)
+		TableStored$Set(Tables)
 		}
 
 ##  Aufruf von Name_Comp_Table(), Zuweisung des modifizierten Datensatzes innerhalb der Funktion
@@ -182,7 +182,7 @@ Name_Comp_Table <- function(TableStored = TableStored, NChar = 5 , StartDate = "
 ##2.1 	Sdc_Set(): Funktion die Spaltennamen für SDC-Tabelle zentral 
 #####   speichert. Die Funktion wird später nicht direkt aufgerufen 
 #####   sondern mit anderen „Set()“-Funktionen durch die Funktion 
-#####   Col_Prop() in der Liste ColPropList gespeichert    
+#####   Data_Prop() in der Liste DataPropList gespeichert    
 Sdc_Set <- function(DatCol = "SpDate", AcCol = "SpAcDscd", TaCol = "SpTaDscd",
                             ShareCol = "SpShAcq", SicAcCol = "SpAcSic", 
                         SicTaCol = "SpTaSic"){    
@@ -194,7 +194,7 @@ Sdc_Set <- function(DatCol = "SpDate", AcCol = "SpAcDscd", TaCol = "SpTaDscd",
 ##2.2	Icc_Set(): Funktion die Spaltennamen für ICC-Tabelle zentral 
 #####   speichert. Die Funktion wird später nicht direkt aufgerufen 
 #####   sondern mit anderen „Set()“-Funktionen durch die Funktion 
-#####   Col_Prop() in der Liste ColPropList gespeichert
+#####   Data_Prop() in der Liste DataPropList gespeichert
 Icc_Set <- function(DatCol = "Datum", DscdCol = "Company_Code", 
                         IccCol = "ICC_CT"){
         
@@ -203,12 +203,12 @@ Icc_Set <- function(DatCol = "Datum", DscdCol = "Company_Code",
 
 ##2.3	Company_Set()Funktion die Spaltennamen für CompanyData-Tabelle 
 #####   zentral speichert. Die Funktion wird später nicht direkt aufgerufen 
-#####   sondern mit anderen „Set()“-Funktionen durch die Funktion Col_Prop() 
-#####   in der Liste ColPropList gespeichert
+#####   sondern mit anderen „Set()“-Funktionen durch die Funktion Data_Prop() 
+#####   in der Liste DataPropList gespeichert
 Company_Set <- function(DscdCol = "DSCD", CharacCol = "KPI",   
                          SicCol = "WC07021",CharacList = NULL){	
         if(!is.null(CharacList)){                                      
-            COMPCol  <- ColPropList$Get()$COMPANY
+            COMPCol  <- DataPropList$Get()$COMPANY
             COMPCol$CharacList <- CharacList}
         else {
             COMPCol <- list("DscdCol" = DscdCol, "CharacCol" = CharacCol, 
@@ -216,13 +216,13 @@ Company_Set <- function(DscdCol = "DSCD", CharacCol = "KPI",
             COMPCol 
         }
 
-##2.4	Event_W_set(): Funktion durch die das prae und post Zeitintervall um den 
+##2.4	Icc_Period_Set(): Funktion durch die das prae und post Zeitintervall um den 
 #####   M&A definiert werden und für deren Zeiträume die ICCs entnommen werden. 
 #####   Die Funktion wird später nicht direkt aufgerufen sondern mit anderen 
-#####   "Set()"-Funktionen durch die Funktion Col_Prop() in der Liste ColPropList 
+#####   "Set()"-Funktionen durch die Funktion Data_Prop() in der Liste DataPropList 
 #####   gespeichert. Außerdem wird innerhalb der Funktion die Funktion Extend_Fun() 
 #####   aufgerufen, um die Länge des CompanyData Datensatzes anzupassen.
-Event_W_set <- function(Close = 3, Far = 16, Size = 6, 
+Icc_Period_Set <- function(Close = 3, Far = 16, Size = 6, 
 				MinObs = 2){	
         ##	Close: Wie viel Monate vor/nach M&A soll das prae/post ICC-Zeitintervall beginnen         
         ##  Far: Entfernung des vom M&A am weitesten entfernten Monats im Zeitintervall
@@ -238,11 +238,11 @@ Event_W_set <- function(Close = 3, Far = 16, Size = 6,
         ##  für Zeitpunkte abgefragt werden könnten, für die keine Spalten vorhanden sind.
         Extend_Fun(TableStored,ceiling(Far/12))
         
-        EventWdata <<- list(Close = Close, Far = Far, 
+        IccPeriodData <- list(Close = Close, Far = Far, 
                         Size =  Size, MinObs = MinObs)
         }
     
-##2.5	Extend_Fun(): wird in Event_W_set() aufgerufen.  Wenn durch die Größe des 
+##2.5	Extend_Fun(): wird in Icc_Period_Set() aufgerufen.  Wenn durch die Größe des 
 #####   post ICC-Zeitintervalls nach Unternehmensdaten eines Datums gefragt wird, das nicht 
 #####   im CompanyData Datensatz enthalten ist, schlägt die Abfrage fehl. Extend_Fun 
 #####   fügt daher weitere Spalten mit NA-Werte für in der Zukunft liegende Zeitpunkte 
@@ -260,12 +260,12 @@ Extend_Fun <- function(TableStored = TableStored, years = 6){
         
 		Tables <- TableStored$Get()
 		Tables$COMPANY <- CompanyTable
-		TableStored$setTable(Tables)
+		TableStored$Set(Tables)
 		}
 
-##2.6 	Col_Prop(): Die Funktion 2.1 bis 2.4 werden als Listenelemente in 
-#####   einer von der Funktion Col_Prop() erstellten Liste ColPropList gebündelt.
-Col_Prop <- function(){
+##2.6 	Data_Prop(): Die Funktion 2.1 bis 2.4 werden als Listenelemente in 
+#####   einer von der Funktion Data_Prop() erstellten Liste DataPropList gebündelt.
+Data_Prop <- function(){
 
 		PropList <- list(NULL)
 		Get <- function()PropList
@@ -278,27 +278,27 @@ Col_Prop <- function(){
 		setCompany <- function(...) if (length(list(...))==0){PropList$COMPANY <<- Company_Set()}
 						else {PropList$COMPANY <<- Company_Set(...)}
         setCharacList <- function(CompanyProp){PropList$COMPANY <<- CompanyProp}                
-		setEventW <- function(...) if (length(list(...))==0){PropList$EVENTW <<- Event_W_set()}
-						else {PropList$EVENTW <<- Event_W_set(...)}
+		setIccPeriod <- function(...) if (length(list(...))==0){PropList$ICCPeriod <<- Icc_Period_Set()}
+						else {PropList$ICCPeriod <<- Icc_Period_Set(...)}
         
         ## Funktion zum setzen von Standardwerten
         setDefault <- function(){
                         PropList$SDC <<- Sdc_Set()
                         PropList$ICC <<- Icc_Set()
                         PropList$COMPANY <<- Company_Set()
-                        PropList$EVENTW <<- Event_W_set()
+                        PropList$ICCPeriod <<- Icc_Period_Set()
                         }
     
         ## Erstellt Liste
-		ColPropList <<- list(Get = Get, setSdc = setSdc, setICC = setIcc, setCompany = setCompany,
-					setEventW = setEventW, setDefault = setDefault)	
+		DataPropList <<- list(Get = Get, setSdc = setSdc, setICC = setIcc, setCompany = setCompany,
+					setIccPeriod = setIccPeriod, setDefault = setDefault)	
 		}
 
-##  Aufruf von Col_Prop() ->  Liste ColPropList wird erstellt ohne Zuweisung        
-    Col_Prop()
+##  Aufruf von Data_Prop() ->  Liste DataPropList wird erstellt ohne Zuweisung        
+    Data_Prop()
 
-##  Setzen von Standardwerten für ColProp     
-    ColPropList$setDefault()
+##  Setzen von Standardwerten für DataPropList     
+    DataPropList$setDefault()
 
     
     
@@ -307,7 +307,7 @@ Col_Prop <- function(){
     
 ##3.1	Sdc_Adjust(): Modifiziert die Datentypen für SDC und ICC Datensatz 
 #####   sowie die Spaltennamen des SDC Datensatz    
-Sdc_Adjust <- function(TableStored,ColPropList){
+Sdc_Adjust <- function(TableStored,DataPropList){
 		
 		SdcTable <- TableStored$Get()$SDC
         IccTable <- TableStored$Get()$ICC
@@ -326,47 +326,47 @@ Sdc_Adjust <- function(TableStored,ColPropList){
 		SdcTable[,SpShAfterTra:= SpShAfterTra/100]
 		SdcTable[,SpShAcq:= SpShAcq/100]
         
-        IccDatCol <- ColPropList$Get()$ICC$DatCol
+        IccDatCol <- DataPropList$Get()$ICC$DatCol
         IccTable[,{IccDatCol}:=as.Date(strptime(IccTable[[IccDatCol]],"%Y-%m-%d"))]     
 		
         ## Überschreibung alter Datensätze
         Tables <- TableStored$Get()
 		Tables$SDC <- SdcTable
-		TableStored$setTable(Tables)
+		TableStored$Set(Tables)
 		}
 
 ##  Aufruf von Sdc_Adjust()        
-    Sdc_Adjust(TableStored,ColPropList)          
+    Sdc_Adjust(TableStored,DataPropList)          
         
 ## 3.2	Icc_Conv_Date(): Modifiziert die Datentypen in den Spalten des 
 ##      ICC Datensatzes.       
-Icc_Conv_Date <- function(ColPropList, TableStored){
+Icc_Conv_Date <- function(DataPropList, TableStored){
 
 		IccTable <- TableStored$Get()$ICC
-		IccProp <- ColPropList$Get()$ICC
+		IccProp <- DataPropList$Get()$ICC
 		DatCol <- IccProp$DatCol
-		IccDatCol <- ColPropList$Get()$ICC$DatCol  ##X
+		IccDatCol <- DataPropList$Get()$ICC$DatCol  ##X
         
         IccTable[,{IccDatCol}:=substr(IccTable[[IccDatCol]],1,7)]
-        IccDatCol <- ColPropList$Get()$ICC$DatCol                        
+        IccDatCol <- DataPropList$Get()$ICC$DatCol                        
 
         ## Überschreibung alter Datensätze
 		Tables <- TableStored$Get()
 		Tables$ICC <- IccTable
-		TableStored$setTable(Tables)
+		TableStored$Set(Tables)
 		}
         
-Icc_Conv_Date(ColPropList, TableStored)
+Icc_Conv_Date(DataPropList, TableStored)
 
 ##3.3   Icc_Prop_Charac_List_Set(): untersucht an welchen Positionen im 
 #####   Datensatz für Unternehmensdaten welche Unternehmensdaten MV, Sales etc.
 #####   auftauchen und gibt eine Liste mit logischen Datensätzen für jeden
-#####   Unternehmensdatentyp zurück. Dieser wird an ColPropList angehängt.
+#####   Unternehmensdatentyp zurück. Dieser wird an DataPropList angehängt.
 #####   Die Aktion soll später bei den Berechnungen Zeit einsparen.
-Icc_Prop_Charac_List_Set <- function(TableStored = TableStored, ColPropList){
+Icc_Prop_Charac_List_Set <- function(TableStored = TableStored, DataPropList){
 		
 		CompanyTable <- TableStored$Get()$COMPANY 
-		CompProp  <- ColPropList$Get()$COMPANY
+		CompProp  <- DataPropList$Get()$COMPANY
 		CharacCol <- CompProp$CharacCol
 		CharacCol <- CompanyTable[[CharacCol]]          ##
 		CharacCol <- as.factor(CharacCol)		
@@ -376,27 +376,27 @@ Icc_Prop_Charac_List_Set <- function(TableStored = TableStored, ColPropList){
 		colnames(CharacMat) <- Characs
 		CharacMat <- as.data.table(CharacMat)	
         
-        ## Anhängen an ColPropList
-        ColPropList$setCompany(CharacList = CharacMat)
+        ## Anhängen an DataPropList
+        DataPropList$setCompany(CharacList = CharacMat)
 		}
               
 ##4.1	Sdc_Get(): Entnimmt Daten zu M&A aus SDC Datensatz und berechnet 
-#####   gleichzeitig durch Zugriff auf #######Carrier$retrieveEventW(Datum) ###### das Zeitintervall
-#####   zur ICC Berechnung
-Sdc_Get <- function(ColPropList, TableStored, SDCRow,Carrier){
-        ##  Zunächst werden die Spaltennamen des SDC Datensatzes aus ColPropList
+#####   gleichzeitig durch Zugriff auf AccessData$retrieveIccPeriod(Datum) 
+#####   das Zeitintervall zur ICC Berechnung
+Sdc_Get <- function(DataPropList, TableStored, SDCRow,access_data = AccessData){
+        ##  Zunächst werden die Spaltennamen des SDC Datensatzes aus DataPropList
         ##  Zwischengespeichert, ebenso wie der SDC Datensatz.
-        ##  Dann wird durch den Funktionsaufruf Carrier$retrieveEventW
+        ##  Dann wird durch den Funktionsaufruf access_data$retrieveIccPeriod
         ##  die Berechnung der prae und post Zeitintervalle ausgelöst
         ##  und zum Funktionsende die M&A Daten eingeholt und in Liste
         ##  zurück gegeben.
         
         ##  SDCRow: Welche Zeile im SDC Datensatz ausgewertet wird
         ##          im Prinzip der M&A um den es sich handelt.
-        ##  Carrier: Liste in der Funktionen zur Datenauswertung zusammen-
-        ##           gefasst sind - wird später genauer erläutert.   
+        ##  AccessData: Liste in der Funktionen zur Datenauswertung zusammen-
+        ##               gefasst sind - wird später genauer erläutert.   
         
-        SdcProp  <- ColPropList$Get()$SDC   ## Aufruf der Spaltenbenennung des SDC Datensatzes
+        SdcProp  <- DataPropList$Get()$SDC   ## Aufruf der Spaltenbenennung des SDC Datensatzes
         SdcTable <- TableStored$Get()$SDC   ## Aufruf des SDC Datensatze
         
         ## Zwischenspeicherung der SDC Spaltennamen
@@ -408,10 +408,10 @@ Sdc_Get <- function(ColPropList, TableStored, SDCRow,Carrier){
         SicTarCol   <- SdcProp$SicTaCol
         
         Datum     <- SdcTable[[DatCol]][SDCRow]
-        Carrier$retrieveEventW(Datum) 
-        ## Carrier: wird später erklärt. Hier wird eine Funktion aufgerufen
-        ##          die für das M&A Datum die post/prae Zeitintervalle berechnet 
-        ##          und speichert.    
+        access_data$retrieveIccPeriod(Datum) 
+        ## access_data: wird später erklärt. Hier wird eine Funktion aufgerufen
+        ##              die für das M&A Datum die post/prae Zeitintervalle berechnet 
+        ##              und speichert.    
         
         
         ## Entnahme der M&A Informationen
@@ -427,22 +427,22 @@ Sdc_Get <- function(ColPropList, TableStored, SDCRow,Carrier){
             SicAc = SicAc, SicTa = SicTa)
         }
 
-##4.2	Event_W_Get(): Berechnet für ein übergebenes Datum die post und prae
+##4.2	Icc_Period_Get(): Berechnet für ein übergebenes Datum die post und prae
 #####   M&A Zeitintervalle
-Event_W_Get <- function(Datum){
+Icc_Period_Get <- function(Datum){
 	
-        EventWProp <- ColPropList$Get()$EVENTW ## Aufruf der zuvor definierten Parameter für Zeifenster
+        icc_period_data <- DataPropList$Get()$ICCPeriod ## Aufruf der zuvor definierten Parameter für Zeifenster
         
         Datum <- as.POSIXlt(Datum) 
         Datum$mday <- 15
-        DatPost <- DatPrae <- rep(Datum,EventWProp$Far - EventWProp$Close+1)
+        DatPost <- DatPrae <- rep(Datum,icc_period_data$Far - icc_period_data$Close+1)
                  
-        DatPrae$mon <- DatPrae$mon-(EventWProp$Far:EventWProp$Close)    ##  Zuweisung des prae Zeitintervalls
-        DatPost$mon <- DatPost$mon+(EventWProp$Close:EventWProp$Far)    ##  Zuweisung des post Zeitintervalls
+        DatPrae$mon <- DatPrae$mon-(icc_period_data$Far:icc_period_data$Close)    ##  Zuweisung des prae Zeitintervalls
+        DatPost$mon <- DatPost$mon+(icc_period_data$Close:icc_period_data$Far)    ##  Zuweisung des post Zeitintervalls
         DatPrae <- substr(as.Date(DatPrae),1,7) ##  Entfernung der Wochentage (für Auswertung sind nur Monate von Bedeutung)
         DatPost <- substr(as.Date(DatPost),1,7) ##  Entfernung der Wochentage (für Auswertung sind nur Monate von Bedeutung)
-        MinObs <- EventWProp$MinObs
-        Size <- EventWProp$Size	## größe der rollierenden Berechnungsfenster
+        MinObs <- icc_period_data$MinObs
+        Size <- icc_period_data$Size	## größe der rollierenden Berechnungsfenster
 
         list(DatPrae = DatPrae, DatPost = DatPost, MinObs = MinObs, Size = Size)
         }
@@ -451,8 +451,8 @@ Event_W_Get <- function(Datum){
 ##4.3	Icc_Get(): entnimmt für die Zeitfenster und Datastream Codes der M&A Partner 
 #####   die ICC-Werte aus dem ICC Datensatz und berechnet innerhalb der beiden Zeitintervalle
 #####   (post/prae M&A) rollierend Mittelwerte unter der Bedingung, dass die geforderte Anzahl
-#####   an Mindestbeobachtungen erfüllt ist (-->ColPropList$Get()$EVENTW$MinObs<--)
-Icc_Get <- function(ColPropList, TableStored, Carrier, Sample=FALSE){
+#####   an Mindestbeobachtungen erfüllt ist (-->DataPropList$Get()$ICCPeriod$MinObs<--)
+Icc_Get <- function(DataPropList, TableStored, access_data = AccessData, Sample=FALSE){
         ## Nach Aufruf von Spaltenbenennung und ICC Datensatz
         ## werden zunächst prae ICCs für Target- und Acquiror-Unternehmen
         ## sowie post ICCs für Acquiror-Unternehmen aus ICC Datensatz
@@ -460,15 +460,15 @@ Icc_Get <- function(ColPropList, TableStored, Carrier, Sample=FALSE){
         ## Danach werden durch rollapply die rollierenden Mittelwerte für alle
         ## Berechnungsfenster im Zeitintervall berechnet.
         
-        IccProp <- ColPropList$Get()$ICC	## Aufruf der Spaltenbenennung des ICC Datensatzes
+        IccProp <- DataPropList$Get()$ICC	## Aufruf der Spaltenbenennung des ICC Datensatzes
         
         if(Sample){IccTable <- TableStored$Get()$ICCsample} #
         else{IccTable <- TableStored$Get()$ICC}   
         ##  legt fest ob gesamter ICC Datensatz durchsucht werden soll oder ein vorher erstellter
         ##  reduzierter Datensatz der alle notwendigen Daten enthält. Zur Einsparung von Rechenzeit. 
         
-        SdcData <- Carrier$Get()$SDC        ##  Aufruf der von SDC_get() entnommenen M&A Informationen
-        PeriodData <- Carrier$Get()$EVENTW  ##  Aufruf der von Event_W_Get() erstellten Zeitfenster
+        SdcData <- access_data$Get()$SDC        ##  Aufruf der von SDC_get() entnommenen M&A Informationen
+        PeriodData <- access_data$Get()$ICCPeriod  ##  Aufruf der von Icc_Period_Get() erstellten Zeitfenster
         
         ## Zwischenspeicherung der ICC Spaltennamen
         DatCol  <- IccProp$DatCol
@@ -535,19 +535,19 @@ Icc_Get <- function(ColPropList, TableStored, Carrier, Sample=FALSE){
 		ICC	
 		}
 
-##4.4	Comp_Get: Entnimmt für die Zeitfenster und Datastream Codes der M&A 
+##4.4	Company_Get: Entnimmt für die Zeitfenster und Datastream Codes der M&A 
 #####   Partner die Marktwerte aus dem Datensatz mit Unternehmensdaten und 
 #####   berechnet innerhalb der beiden Zeitfenster (post/prae M&A) rollierend 
 #####   Mittelwerte unter der Bedingung, dass die geforderte Anzahl Mindestbeo-
 #####   bachtungen erfüllt ist. Mit MV-Mittelwerten können später die gewichtete ICCs 
 #####   bestimmt werden.
-Comp_Get <- function(ColPropList, TableStored, Carrier){
+Company_Get <- function(DataPropList, TableStored, access_data = AccessData){
 	## Im Prinzip zu ICC_Get() analoge Bestimmung von Marktwerten
 		
-        CompProp <- ColPropList$Get()$COMPANY
+        CompProp <- DataPropList$Get()$COMPANY
 		CompanyTable <- TableStored$Get()$COMPANY		
-		SdcData <-  Carrier$Get()$SDC	
-        PeriodData <- Carrier$Get()$EVENTW
+		SdcData <-  access_data$Get()$SDC	
+        PeriodData <- access_data$Get()$ICCPeriod
     
 		CharacCol <- CompProp$CharacList
 		CharacCol <- CharacCol$MV
@@ -590,7 +590,7 @@ Comp_Get <- function(ColPropList, TableStored, Carrier){
 		}
 
 
-##4.5	Data_Retrieve(): Auf Sdc_Get(), Icc_Get() und Comp_Get() wird
+##4.5	Data_Retrieve(): Auf Sdc_Get(), Icc_Get() und Company_Get() wird
 #####   nicht direkt zugegriffen. Sondern durch Data_Retrieve() wird eine
 #####   Liste der Funktionen erstellt über die auf die Funktionen 
 #####   4.1, 4.3,  4.4 zugegriffen werden kann. Die Liste speichert Außerdem
@@ -600,12 +600,12 @@ Data_Retrieve <- function(){
         MaaData <- list(NULL)
         retrieveSdc <- function(...){MaaData$SDC <<- Sdc_Get(...)}
         retrieveIcc <- function(...){MaaData$ICC <<- Icc_Get(...)}
-        retrieveCompany <- function(...){MaaData$COMPANY <<- Comp_Get(...)}
-        retrieveEventW <- function(...){MaaData$EVENTW <<- Event_W_Get(...)}
+        retrieveCompany <- function(...){MaaData$COMPANY <<- Company_Get(...)}
+        retrieveIccPeriod <- function(...){MaaData$ICCPeriod <<- Icc_Period_Get(...)}
         Get <- function()MaaData
         
         list(retrieveSdc = retrieveSdc, retrieveIcc = retrieveIcc, retrieveCompany = retrieveCompany, 
-            retrieveEventW = retrieveEventW, Get = Get)
+            retrieveIccPeriod = retrieveIccPeriod, Get = Get)
         }
 
         
@@ -614,11 +614,11 @@ Data_Retrieve <- function(){
 ## 5.   Anwendung der Funktionen aus Schritt 4 zur Erstellung eines finalen
 ##      Datensatzes, der für jeden M&A die ICCs angibt.        
 
-##5.1	SumTab(): Ruft für jeden M&A Sdc_Get(),Icc_Get() und Comp_Get() auf 
+##5.1	Compute_MandA_Table(): Ruft für jeden M&A Sdc_Get(),Icc_Get() und Company_Get() auf 
 #####   (bzw. indirekt über eine von Data_Retrieve() erstellte Liste. 
 #####   Berechnet aus den erhaltenen Informationen alle ICCs zum M&A und 
 #####   gibt die Daten in einer neuen Tabelle zurück.
-SumTab <- function(ColPropList,TableStored){
+Compute_MandA_Table <- function(DataPropList,TableStored){
     ## Zuerst wird ein kleinerer ICC Datensatz erstellt um die Berechnungen zu
     ## beschleunigen. Dann wird eine leere Tabelle aufgebaut in der später die
     ## M&A Daten gespeichert werden.
@@ -634,15 +634,15 @@ SumTab <- function(ColPropList,TableStored){
         laenge <- nrow(SdcTable)
         
         ## Reduzierung des ICC Datensatzes auf relevanten Spalten 
-        IccTable <- IccTable[,as.character(ColPropList$Get()$ICC),with=F]
+        IccTable <- IccTable[,as.character(DataPropList$Get()$ICC),with=F]
         
             ## In den folgenden zehn Zeilen wir der ICC Datensatz auf einen
             ## Neuen verkleinert, in dem nur diejenigen Zeilen noch vorhanden sind,
             ## in denen Daten für Unternehmen gespeichert sind, die auch im SDC Datensatz
             ## sind.
-            AcquirorDscds <- ColPropList$Get()$SDC$AcCol
-            TargetDscds <- ColPropList$Get()$SDC$TaCol
-            IccDscdCol <- ColPropList$Get()$ICC$DscdCol
+            AcquirorDscds <- DataPropList$Get()$SDC$AcCol
+            TargetDscds <- DataPropList$Get()$SDC$TaCol
+            IccDscdCol <- DataPropList$Get()$ICC$DscdCol
             
             ## Sammeln aller Datastream Codes aus SDC Datensatz
             DscdsList <- c( SdcTable[[AcquirorDscds]][1:laenge], SdcTable[[TargetDscds]][1:laenge])
@@ -651,32 +651,32 @@ SumTab <- function(ColPropList,TableStored){
             IccTable <- IccTable[IccSampleRows,]
             Tables <- TableStored$Get()    
             Tables$ICCsample <- IccTable
-            TableStored$setTable(Tables)
+            TableStored$Set(Tables)
         
         ## Erstellung eines leeren Datensatze in dem später die M&A Daten gespeichert werden
-        EventWdata <- ColPropList$Get()$EVENTW
-        nobs <- ((EventWdata$Far - EventWdata$Close+1)-EventWdata$Size+1)
-        test2 <- as.data.frame(matrix(rep(NA,(7+6*nobs)*laenge),nrow=laenge,ncol=7+6*nobs))
+        icc_period_data <- DataPropList$Get()$ICCPeriod
+        nobs <- ((icc_period_data$Far - icc_period_data$Close+1)-icc_period_data$Size+1)
+        MaA_Table <- as.data.frame(matrix(rep(NA,(7+6*nobs)*laenge),nrow=laenge,ncol=7+6*nobs))
         
         ## Aufruf von Funktion 3.3
-        Icc_Prop_Charac_List_Set(TableStored, ColPropList) 
+        Icc_Prop_Charac_List_Set(TableStored, DataPropList) 
         
         ## das Rückgabeobjekt von Data_Retrieve() muss vor Verwendung bereits existieren
-        Carrier <<- Data_Retrieve ()
+        AccessData <<- Data_Retrieve ()
         
         
             ## Start der tatsächlichen Datenentnahme und der Berechnung     
-            for (i in 1:laenge){ ## i für jede Zeile des SDC Datensatzes
+            for (i_row in 1:laenge){ ## i_row für jede Zeile des SDC Datensatzes
 
-                Carrier$retrieveSdc(ColPropList, TableStored, i,Carrier) ## Anwendung von Sdc_Get()
-                Carrier$retrieveIcc(ColPropList, TableStored, Carrier, Sample=TRUE) ## Anwendung von Icc_Get()
-                Carrier$retrieveCompany(ColPropList, TableStored, Carrier) ## Anwendung von Comp_Get()
+                AccessData$retrieveSdc(DataPropList, TableStored, i_row,AccessData) ## Anwendung von Sdc_Get()
+                AccessData$retrieveIcc(DataPropList, TableStored, AccessData, Sample=TRUE) ## Anwendung von Icc_Get()
+                AccessData$retrieveCompany(DataPropList, TableStored, AccessData) ## Anwendung von Company_Get()
 
                 ## Zuweisung der Werte zu der M&A Tabelle    
-                test2[i,] <- c(as.character(Carrier$Get()$SDC$Datum), Carrier$Get()$SDC$AcquirorDscd, Carrier$Get()$SDC$TargetDscd, 
-                    Carrier$Get()$SDC$ShareAc, Carrier$Get()$SDC$SicAc , Carrier$Get()$SDC$SicTa , NA,
-                    Carrier$Get()$ICC$TaIcc, Carrier$Get()$ICC$AcIccPrae, Carrier$Get()$ICC$AcIccPost,
-                    Carrier$Get()$COMPANY$TaMv, Carrier$Get()$COMPANY$AcMvPrae, Carrier$Get()$COMPANY$AcMvPost)	
+                MaA_Table[i_row,] <- c(as.character(AccessData$Get()$SDC$Datum), AccessData$Get()$SDC$AcquirorDscd, AccessData$Get()$SDC$TargetDscd, 
+                    AccessData$Get()$SDC$ShareAc, AccessData$Get()$SDC$SicAc , AccessData$Get()$SDC$SicTa , NA,
+                    AccessData$Get()$ICC$TaIcc, AccessData$Get()$ICC$AcIccPrae, AccessData$Get()$ICC$AcIccPost,
+                    AccessData$Get()$COMPANY$TaMv, AccessData$Get()$COMPANY$AcMvPrae, AccessData$Get()$COMPANY$AcMvPost)	
             }
     
     
@@ -687,22 +687,22 @@ SumTab <- function(ColPropList,TableStored){
         MvColNames  <- c(paste("TaMv",-(nobs:1),sep="_"),paste("AcMvPrae",-(nobs:1),sep="_"),
                         paste("AcMvPost",(1:nobs),sep="_"))
 
-        names(test2)<-c("Date","Acquiror_Dscd","Target_Dscd","Perc_Shares_Acquired","Acquiror_Sic","Target_Sic",
+        names(MaA_Table)<-c("Date","Acquiror_Dscd","Target_Dscd","Perc_Shares_Acquired","Acquiror_Sic","Target_Sic",
                     "SicSep",IccColNames,MvColNames)
         
         ## Änderung der Datentypen der Tabelle auf numeric
-        test2[,c("Perc_Shares_Acquired",IccColNames,MvColNames)]<-apply(test2[,c("Perc_Shares_Acquired",
+        MaA_Table[,c("Perc_Shares_Acquired",IccColNames,MvColNames)]<-apply(MaA_Table[,c("Perc_Shares_Acquired",
                     IccColNames,MvColNames)],2,as.numeric)
         
         ## Zuweisung neuer Spalte die angibt an welcher Sic Ziffer sich die Targer und Acquiror Sic unterscheiden
-        test2$SicSep <- Sic_Separation(test2)
+        MaA_Table$SicSep <- Sic_Separation(MaA_Table)
       
-        test2
+        MaA_Table
         }
  
 ##5.2	Sic_Separation(): Wertet aus bis zu welcher Position die Sic des Targets dem 
 #####   Acquiror gleich ist oder ob beide Sics identisch sind
-Sic_Separation <- function(SummarySdc, AcSicCol = "Acquiror_Dscd", TaSicCol = "Target_Dscd")
+Sic_Separation <- function(SummarySdc, AcSicCol = "Acquiror_Sic", TaSicCol = "Target_Sic")
 			{
             ## Überprüfung bis zu welcher Stelle Acquiror bzw. Target Sic gleich sind bzw. identisch sind
 			Sic0 <- SummarySdc[, AcSicCol] == SummarySdc[, TaSicCol]
@@ -728,6 +728,6 @@ Sic_Separation <- function(SummarySdc, AcSicCol = "Acquiror_Dscd", TaSicCol = "T
 			SicCol
 			}
             
-system.time(testob<-SumTab(ColPropList,TableStored)) 
+system.time(testob<-Compute_MandA_Table(DataPropList,TableStored)) 
 
 ##
