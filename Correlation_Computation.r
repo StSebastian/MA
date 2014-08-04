@@ -4,10 +4,10 @@
 ## Werte der Industriesegmente werden durch S&P 1500 Unternehmen bestimmt, die den 
 ## korrespondierenden Segmenten angehören.
 
-## Der Table MaATable muss bereits in R (von ICC_Computation.R) erstellt worden sein. 
-## Er wird an die letzte Funktion Calc_MandA_Cor() übergeben, die sich jeden M&A-Eintrag 
+## Der SDC Datensatz "SDC_Dataset.csv" muss im R-Verzeichnis sein. Er wird
+## von der letzten Funktion Calc_MandA_Cor() aufgerufen, die sich jeden M&A-Eintrag 
 ## zieht und anhand der SICs und des Datums die Korrelationen bestimmt.
-## Zusätzlich müssen die Datensätze S&P_Composition.csv und S&P_Company_Data.csv 
+## Zusätzlich müssen die Datensätze "S&P_Composition.csv" und "S&P_Company_Data.csv" 
 ## im lokalen R-Verzeichnis abgelegt sein.
 
 
@@ -54,9 +54,9 @@
 ## 2.	Einlesen und Überarbeiten eines Datensatzes mit Unternehmensdaten, zur 
 ##      Erstellung einer Liste von verschiedenen Datensätzen, aufgeteilt nach 
 ##      Unternehmenskennzahlen (Sales, MV etc.):
-## 2.1	SapData_Read(): Liest Datei „…“ ein, teilt die Tabelle in verschiedene 
-##      Tabellen auf, jede für eine Unternehmenskennzahl, und übergibt die Tabellen 
-##      als Liste. Außerdem wird auf SapData_Complete zugegriffen.
+## 2.1	SapData_Read(): Liest Datei "S&P_Company_Data.csv" ein, teilt die Tabelle in 
+##      verschiedene Tabellen auf, jede für eine Unternehmenskennzahl, und übergibt 
+##      die Tabellen als Liste. Außerdem wird auf SapData_Complete zugegriffen.
 ## 2.2	SapData_Complete(): Stellt Identität zwischen Datensätzen her, die in einer 
 ##      Liste (in SapData_Read() übergeben) enthalten sind. Das heißt, jeder Datastream 
 ##      Code bzw. jedes Unternehmen wird in jedem Datensatz in der List an derselben 
@@ -79,7 +79,8 @@
 ##      berechnet werden sollen. Set_Cor_Options() ist die wichtigste Funktion. 
 ##      Die von ihr zurückgegebene Liste, legte fest, nach welchen Kriterien die 
 ##      Korrelationen bestimmt werden sollen z.B. Zeitraum, Toleranz für fehlende 
-##      Werte Berechnungsmethode etc.. Genauere Informationen sind im Dokument „…“
+##      Werte Berechnungsmethode etc.. Genauere Informationen sind im Dokument 
+##        "Erklärung_Set_Cor_Options"
 ##      Set_Cor_Options()
 
 ## 6	Zur Berechnung der Entwicklung des S&P 1500 als Benchmark Index. Wenn die 
@@ -95,28 +96,29 @@
 ##      Funktion wird als Teil von Calc_MandA_Cor() (Schritt 7.3) aufgerufen.
 
 ## 7	Zur Berechnung der Korrelationen auf Basis der durch Set_Cor_Options 
-##      spezifizierten Argumente und der in dem data.table „…“ enthaltenen M&As.
+##      spezifizierten Argumente und der in dem SDC Datensatz "SDC_Dataset.csv"
+##      (der eingelesen wird) gelisteten M&As.
 ## 7.1	Calc_Corr(): Berechnet die Korrelation zwischen zwei Industriesegmenten, die 
-##      durch einen M&A Eintrag in „…“ definiert sind. Die Zeitreihen für jeden SIC-Code 
+##      durch einen M&A Eintrag in SDC Datensatz definiert sind. Die Zeitreihen für jeden SIC-Code 
 ##      werden durch jeweiligen Aufruf der Funktion Calc_Industry_Ts() in Calc_Corr() bestimmt.
 ## 7.2	Calc_Industry_Ts(): Gibt in Abhängigkeit vom M&A Datum und einem SIC-Code eine 
 ##      Zeitreihe von Werten einer Unternehmenskennzahl(z.B. Sales to MV) für das durch 
 ##      den SIC-Code spezifizierte Industriesegment wieder (berechnet aus S&P 1500 Segmenten).
-## 7.3	Calc_MandA_Cor(): Wendet Funktion Calc_Corr() auf jedes Element der Tabelle „…“ an,  ###########################################
-##      die die Übersicht von M&As enthält, die mit dem R-Code „….“ erstellt wurde
+## 7.3	Calc_MandA_Cor(): Liest Tabelle "SDC_Dataset.csv" ein und wendet Funktion Calc_Corr() 
+##      auf jedes Element bzw. jeden M&A an.
 
 
 
-setwd("C:/Users/Sebastian Stenzel/Desktop/Neuer Ordner (2)/R input test/Cor_Data/")
+setwd("C:/Users/Sebastian Stenzel/Desktop/R_Data/Cor_Data/")
 
 library(data.table)
-MaATable<-fread("MaAData.txt",sep=";",stringsAsFactors=F)
+
 
 ##1.    Erstellung eines Datensatzes, der Zugehörigkeit von Unternehmen zum S&P 
 ##      1500 angibt.
 
-##1.1   Sp_Composition_Table(): Liest Datensatz ein, der für jeden Monat, in dem ein 
-#####   Unternehmen im S&P 1500 war, dieses Unternehmen mit seinem Datastream Code und 
+##1.1   Sp_Composition_Table(): Liest Datensatz "S&P_Composition.csv" ein, der für jeden Monat, 
+#####   in dem ein Unternehmen im S&P 1500 war, dieses Unternehmen mit seinem Datastream Code und 
 #####   dem Monat (plus Jahr) für diesen Monat einmal enthält. 
 Read_SP_Composition <- function(){
     
@@ -213,8 +215,8 @@ Composition_Logic <- function(sp_composition = SPComposition){
 ##      der zur Korrelationsberechnung notwendigen Unternehmenswerte (Sales, MV, etc.)
 ##      speichert.
 
-##2.1	SapData_Read(): Liest Datei „…“ ein, teilt die Tabelle in verschiedene 
-#####   Tabellen auf, jede für eine Unternehmenskennzahl  und übergibt die 
+##2.1	SapData_Read(): Liest Datei "S&P_Company_Data.csv" ein, teilt die Tabelle in 
+#####   verschiedene Tabellen auf, jede für eine Unternehmenskennzahl und übergibt die 
 #####   Tabellen als Liste. Außerdem wird auf SapData_Complete() zugegriffen.
 SapData_Read <- function(sp_composition_logic=SPCompositionLogic,CompPropCol="KPI",NaRm = FALSE){
             
@@ -407,18 +409,17 @@ Calc_Sales_by_MV <- function(sap_data = SapData, start_date = "1978-01-01", end_
 ####    sind im Dokument "Erklärung_Set_Cor_Options". Die Werte sind bei Aufruf vordefiniert, können aber 
 ####    angepasst werden, wobei nicht jede Kombination möglich ist.
 Set_Cor_Options<-function(NoObsReqMonth = 8,NoCompReqMonth = 5,NoObsReqYear= 5, NoCompReqYear= 4,
-                    Period="year",PeriodLengthYear=7,PeriodLengthMonth=10,Method="one",EntityProperty="MV"
-                    ,BreakYear="cut",SpExessCor=F){
+                    Period="year",PeriodLengthYear=7,PeriodLengthMonth=10,Method="one",EntityProperty="SalesByMV"
+                    ,SpExessCor=F){
         CorCalcOptions<<-list(Month=data.frame("NoObsReqMonth"=NoObsReqMonth,"NoCompReqMonth"=NoCompReqMonth),
                 Year=data.frame("NoObsReqYear"=NoObsReqYear,"NoCompReqYear"=NoCompReqYear),"Period"=Period,
                 "PeriodLengthYear"=PeriodLengthYear,"PeriodLengthMonth"=PeriodLengthMonth,"Method"=Method,
-                "EntityProperty"=EntityProperty, "BreakYear"=BreakYear,"SpExessCor"=SpExessCor)
+                "EntityProperty"=EntityProperty,"SpExessCor"=SpExessCor)
         }
 ##  Aufruf von Set_Cor_Options() erstellt Liste CorCalcOptions  
     Set_Cor_Options()
 
-    
-    
+
     
 ## 6.   Berechnung der Entwicklung der S&P 1500 als Benchmark für die Entwicklung der
 ##      Unternehmensdaten. Falls später nicht Korrelationen direkt zwischen den Segmenten,
@@ -587,11 +588,11 @@ Calc_Index_Values <- function(sp_composition_dscd = SpCompositionDscd,cor_option
 
 ## 7.   Berechnung der Korrelation
 ##      Funktion Calc_Industry_Ts() entnimmt die Zeitreihe, Funktion Calc_Corr() bestimmt 
-##      Korrelation, Funktion Calc_MandA_Cor() wendet Calc_Corr() auf jeden M&A der Tabelle ".."
-##      an.    
+##      Korrelation, Funktion Calc_MandA_Cor() wendet Calc_Corr() auf jeden M&A im SDC Datensat
+##      ("SDC_Dataset.csv") an.    
 
 ##7.1	Calc_Corr(): Berechnet die Korrelation zwischen zwei Industriesegmenten, die 
-#####   durch einen M&A Eintrag in „…“ definiert sind. Die Zeitreihen für jeden SIC-Code 
+#####   durch einen M&A Eintrag in SDC Datensatz definiert sind. Die Zeitreihen für jeden SIC-Code 
 #####   werden durch jeweiligen Aufruf der Funktion Calc_Industry_Ts() in Calc_Corr() bestimmt.
 Calc_Corr<-function(sp_composition_logic,sap_data,SicAcquiror,SicTarget,Date,cor_options=CorCalcOptions,index_values){
      
@@ -635,10 +636,14 @@ Calc_Corr<-function(sp_composition_logic,sap_data,SicAcquiror,SicTarget,Date,cor
             ## Angaben zur S&P 1500 Zusammensetzung vorhanden sind
             DateSap <- Date[Date>=1995]
             if(length(DateSap)==0){return(NA)}
+           
             DateSap <- which(is.element(colnames(sp_composition_logic),DateSap))
-            ##if(length(DateSap)<length(Date)){DateSap<-c(7,DateSap)}
-            ##if(cor_options$BreakYear=="cut" & length(DateSap) < NoObsReq){return(NA)}
-            ## Auswahl cut bricht ab, sobald die Anzahl an 
+
+            ## Wenn der Zeitraum vor das Jahr 1995 zurückgeht, immer automatische
+            ## Verlängerung bis zum ersten Datum der Erfassung der S&P 1500 Zusammensetzung.
+            if(length(DateSap)<length(Date)){DateSap<-c(7,DateSap)}
+            DateSap<-min(DateSap):max(DateSap)
+
             }
             
         ## Für Methode "one" spielt nur das letzte (jüngste) Datum ein Rolle, DateSap muss aber trotzdem
@@ -667,12 +672,9 @@ Calc_Corr<-function(sp_composition_logic,sap_data,SicAcquiror,SicTarget,Date,cor
         ## Falls Korrelationen nicht direkt bestimmt werden sollen, sondern 
         ## über die Korrelation der Residuen einer Regression 
         ## der Zeitreihe auf die Entwicklung des S&P als Index:    
-              bb<<-AcIndustryTs
-            cc<<-TaIndustryTs
-            dd<<-max(DateSap)
+
       if(cor_options$SpExessCor){    
             x <- index_values[[cor_options$Method]][[max(Date)]]
-            a<<-x
       
             coefficient <- coef(lm(AcIndustryTs~x))
             AcIndustryTs <- (AcIndustryTs-(coefficient["(Intercept)"]-coefficient["x"]*x))
@@ -736,6 +738,7 @@ Calc_Industry_Ts<-function(sp_composition_logic,sap_data,Date,DateSap,Sic,SicDig
 
                 ## Für Methode "two" werden sämtliche S&P 1500 Unternehmen im Berechnungszeitraum
                 ## berücksichtigt
+
                 Spalten<-rowSums(Boolean*sp_composition_logic[,DateSap,with=F]) > 0
                 IndustryTs <- sap_data[[cor_options$EntityProperty]][as.logical(Spalten),c("DSCD","SIC_four",Date),with=F]
                 }  
@@ -769,38 +772,38 @@ Calc_Industry_Ts<-function(sp_composition_logic,sap_data,Date,DateSap,Sic,SicDig
       
 
 
-##7.3	Calc_MandA_Cor(): Wendet Funktion Calc_Corr() auf jedes Element der Tabelle „…“ an,
-#####   die die Übersicht von M&A enthält, die mit dem R-Code „….“ erstellt wurde
-Calc_MandA_Cor<-function(maa_table = MaATable,sp_composition_logic = SPCompositionLogic,sap_data = SapData,cor_options = CorCalcOptions, sp_composition_dscd = SpCompositionDscd){
+##7.3	Calc_MandA_Cor(): Liest Tabelle "SDC_Dataset.csv" ein und wendet Funktion Calc_Corr() 
+#####   auf jedes Element bzw. jeden M&A an.
+Calc_MandA_Cor<-function(sp_composition_logic = SPCompositionLogic,sap_data = SapData,cor_options = CorCalcOptions, sp_composition_dscd = SpCompositionDscd){
         ##  Aufruf von Calc_Index_Values() zur Berechnung der S&P 1500 Index Werte
         index_values<-Calc_Index_Values(sp_composition_dscd, cor_options)
         
-        N_Values <- nrow(maa_table)
-        ##N_Values <- 50
+        sdc_data <- fread("SDC_Dataset.csv",sep=";",colClasses=c("character", "numeric", "character", "character",
+                                "character", "character", "character", "character", "character", "character", 
+                                "character", "character", "character", "numeric", "numeric"))
+                                
+        sdc_data[,Date_Effective:=as.character(as.Date(strptime(Date_Effective,"%m.%d.%Y")))]
+
+        SdcData<<-sdc_data
+        
+        N_Values <- nrow(sdc_data)
         
         ## Erstellung eines leeren Datensatz, in dem Korrelationen gespeichert werden sollen
         Correlations <- rep(NA,N_Values)
         
-        SdcData <- fread("SDC_Dataset.csv",sep=";",colClasses=c("character", "numeric", "character", "character",
-                                "character", "character", "character", "character", "character", "character", 
-                                "character", "character", "character", "numeric", "numeric"))
-                                
-        SdcData[,Date_Effective:=as.character(as.Date(strptime(Date_Effective,"%m.%d.%Y")))]
-        
         ## for-Schleife startet Prüfung für jeden M&A (jede Zeile) im Datensatz 
         for(n_row in 1:N_Values){
-
+     
             ## Entnahme relevanter M&A Daten    
-            Date <- maa_table$Date[n_row]
-            SicAcquiror <- maa_table$Acquiror_Sic[n_row]
-            SicTarget <- maa_table$Target_Sic[n_row]
+            Date <- sdc_data$Date_Effective[n_row]
+            SicAcquiror <- sdc_data$Ac_SIC[n_row]
+            SicTarget <- sdc_data$Ta_SIC[n_row]
             
             ## Entfernung von M&As vor Untersuchungszeitraum
             if(as.Date(Date) < as.Date("1995-11-30")){Correlations[n_row] <- NA;next}
             
             ## Falls SICs der M&A Unternehmen identisch sind, ist Korrelation = 1
             if(SicAcquiror==SicTarget){Correlations[n_row] <- 1;next}
-            
   
             ## Aufruf der Funktion für Korrelationsberechnung und Zuweisung des Ergebnisses
             Correlations[n_row] <- Calc_Corr(sp_composition_logic,sap_data,SicAcquiror,SicTarget,Date,cor_options,index_values)
@@ -808,14 +811,28 @@ Calc_MandA_Cor<-function(maa_table = MaATable,sp_composition_logic = SPCompositi
         Correlations <- as.numeric(Correlations)
         }
  
-  system.time( MandACor<-Calc_MandA_Cor(MaATable,SPCompositionLogic,SapData,CorCalcOptions))
+ 
 
-  MaATable[,c("Date", "Acquiror_Sic","Target_Sic"),with=F][,1,with=F] ==SdcData[,c("Date_Effective","Ta_SIC","Ac_SIC"),with=F] [,1,with=F]
-  MaATable[["Target_Sic"]]==SdcData[["Ta_SIC"]
-  SdcData[,Date_Effective:=as.Date(strptime(Date_Effective,"%m.%d.%Y"))]
-  
-   SdcData <- fread("SDC_Dataset.csv",sep=";",colClasses=c("character", "numeric", "character", "character",
-                                "character", "character", "character", "character", "character", "character", 
-                                "character", "character", "character", "numeric", "numeric"))
+## Berechnungen für Auswertung
 
+## Zunächst Berechnung mit Methode "one" und direkten Korrelation zwischen Industriesegmenten 
+    MethOne_TotalCor<-Calc_MandA_Cor(SPCompositionLogic,SapData,CorCalcOptions)
+
+## Als Zweites Berechnung mit Korrelation von Residuen einer Regression der Segmente auf den S&P 1500 
+    CorCalcOptions$SpExessCor<-T
+    MethOne_ResCor<-Calc_MandA_Cor(SPCompositionLogic,SapData,CorCalcOptions)    
+    
+## Berechnung mit Methode "two" und Verwendung von Korrelationen mit Residuen    
+    CorCalcOptions$Method<-"two"
+    MethTwo_ResCor<-Calc_MandA_Cor(SPCompositionLogic,SapData,CorCalcOptions)    
+ 
+## Berechnung mit Methode "two" und direkten Korrelation zwischen Segmenten   
+    CorCalcOptions$SpExessCor<-F
+    MethTwo_TotalCor<-Calc_MandA_Cor(SPCompositionLogic,SapData,CorCalcOptions)
+
+
+## Zusammenfassung der Date und Speicherung des Datensatzes    
+    KorrTable <- cbind(SdcData[,c("Date_Effective","Ac_SIC","Ta_SIC"),with=F], MethOne_TotalCor , MethOne_ResCor, MethTwo_ResCor, MethTwo_TotalCor)
+
+    write.table(KorrTable,"KorrTable.txt",sep=";",col.names=T,row.names=F))
   

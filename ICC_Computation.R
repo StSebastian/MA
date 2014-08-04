@@ -106,6 +106,8 @@
 library(zoo)
 library(data.table)
 
+setwd("C:/Users/Sebastian Stenzel/Desktop/R_Data/ICC_Data")
+        
 ## 1.   Einlesen der Datensätze und deren Modifizierung.
 
 ##1.1   Read_Table(): Liest SDC, ICC und CompanyData Datensätze ein. 
@@ -113,7 +115,7 @@ library(data.table)
 #####   Set und Get auf die Liste der Datensätze zugegriffen 
 #####   werden kann.
 Read_Table<-function(){
-        setwd("C:/Users/Sebastian Stenzel/Desktop/Neuer Ordner (2)/R input test/ICC_Data")
+
 
         SdcData <- fread("SDC_Dataset.csv",sep=";",colClasses=c("character", "numeric", "character", "character",
                                 "character", "character", "character", "character", "character", "character", 
@@ -775,179 +777,9 @@ Calc_Icc_Diff <- function(maa_table = MaATable, weighted_icc_prae ="WeightedIccP
             maa_table
             }
             
-            
-system.time(MaATable<-Compute_MandA_Table(DataPropList,TableStored))     
+## Start der Berechnung und Speicherung des Datensatzes           
+    MaATable<-Compute_MandA_Table(DataPropList,TableStored)    
 
-library(ggplot2)
+    write.table(MaATable,"MaATable.txt",sep=";",col.names=T,row.names=F)
+    
 
-Calc_SicSep_Values<-function(maa_table = MaATable,icc_difference ="IccDifference",...){
-        n_icc_calc <- length(grep(icc_difference,colnames(maa_table)))
-        data_table <- data.frame(NULL)
-        sep_column <- "SicSep"
-        
-        for(i in 1:n_icc_calc){
-            value_col <- paste(icc_difference,i,sep="_")
-            pair_values <- tapply(maa_table[,value_col],maa_table[,sep_column],...)
-            data_table <- rbind(data_table,pair_values)
-            }
-        colnames(data_table)<-names (pair_values)  
-        data_table
-        }
-  
-WeightedMeans <- Calc_SicSep_Values(MaATable,"IccDifference",mean,na.rm=T)
-  
-Plot_SicSep_Values<-function(  weighted_means = WeightedMeans,value_name){
-        sic_classes <- colnames(weighted_means)
-        n_row  <- nrow(weighted_means)
-        plot_table <- data.frame(NULL)
-        
-        for(i_class in sic_classes){
-            class_frame <-data.frame(cbind(1:n_row,weighted_means[,i_class],i_class), stringsAsFactors=FALSE)
-            plot_table<-rbind(plot_table,class_frame)
-            }
-            
-        colnames(plot_table)<-c("X",value_name,"SicSeperation")
-        plot_table[,value_name]<-as.numeric(plot_table[,value_name])
-        plot_table[,"Sic Seperation"]<-as.factor(plot_table[,"SicSeperation"])          
-        plot_table[,"X"]<-as.integer(plot_table[,"X"])  
-        plot_table[,"SicSeperation"]<-factor(plot_table[,"SicSeperation"],levels=c( "sameSic","fourthDigit","thirdDigit","secDigit","firstDigit"))
-        plot_table
-        
-        ggplot(data=plot_table, aes_string(x="X",y=value_name,group="SicSeperation", colour="SicSeperation")) + 
-        geom_line() + geom_point() + xlab("Range between Interval - Pairs")+ylab("ICC Post/Prae M&A Difference")+
-        ggtitle("Depenendence of ICC Difference on M&A-Partners SIC") +
-        geom_abline(aes(slope=0,intercept=0), color="black")+
-        scale_x_continuous(breaks = round(seq(min(plot_table$X), max(plot_table$X), by = 2),1)) ##+
-        ##scale_y_continuous(breaks = round(seq(min(plot_table[,value_name]), max(plot_table[,value_name]),  by = 0.001),1))
-        ##by =  (max(plot_table[,value_name])-min(plot_table[,value_name]))/10),1))
-        ##ggplot(data=plot_table, aes(x=factor(X), y=value_name, group="Sic Seperation", colour=Sic Seperation)) + geom_line() + geom_point()
-        }   
-
-Plot_SicSep_Values(  weighted_means = WeihtedMeans,value_name="mean")        
-
-Plot_Sic_Group <- function(maa_table = MaATable,icc_difference ="IccDifference"){
-            
-            mean_value <-Calc_SicSep_Values(maa_table = maa_table,icc_difference =icc_difference,mean,na.rm=T)
-            median_value <-Calc_SicSep_Values(maa_table = maa_table,icc_difference =icc_difference,median,na.rm=T)
-            quantile_0.75_value <-Calc_SicSep_Values(maa_table = maa_table,icc_difference =icc_difference,quantile,probs=0.75,na.rm=T)
-            quantile_0.25_value <-Calc_SicSep_Values(maa_table = maa_table,icc_difference =icc_difference,quantile,probs=0.25,na.rm=T)
-            n_row  <- nrow(mean_value)
-            
-            
-                order_statistic <-function(measure_table,measure){
-                    group_names <- colnames(measure_table)
-                    ordered_statistic <- data.frame(NULL)
-                    for (i_group in group_names){
-                            class_date <- data.frame(cbind(1:n_row,measure_table[,i_group],i_group,measure), stringsAsFactors=FALSE)
-                            ordered_statistic   <-rbind(ordered_statistic, class_date)
-                    }
-                    colnames(ordered_statistic)<-c("X","Value","SicSep","Measure")
-                    ordered_statistic
-                }   
-                
-            plot_table<-data.frame(NULL)   
-                
-            plot_table <- rbind(plot_table,order_statistic(mean_value,"mean"))
-            plot_table <- rbind(plot_table,order_statistic(median_value,"median"))
-            plot_table <- rbind(plot_table,order_statistic(quantile_0.75_value,"quant 0.75"))
-            plot_table <- rbind(plot_table,order_statistic(quantile_0.25_value,"quant 0.25"))
-            plot_table[,"X"] <- as.integer(plot_table[,"X"])
-            plot_table[,"Value"] <- as.numeric( plot_table[,"Value"])
-            plot_table[,"SicSep"]<-factor(plot_table[,"SicSep"],levels=c( "sameSic","fourthDigit","thirdDigit","secDigit","firstDigit"))
-            
-            ggplot(plot_table, aes(x = X)) +geom_line(aes(y=Value,group=Measure,colour=Measure))+ facet_wrap(~ SicSep) +
-            geom_abline(aes(slope=0,intercept=0), color="black")+
-            scale_x_continuous(breaks = round(seq(min(plot_table$X), max(plot_table$X), by = 3),1))
-            }
-
-Wilcoxon_Signed_Rank<- function(maa_table = MaATable, weighted_icc_prae ="WeightedIccPrae", acquiror_icc_prae ="AcIccPost"){
-            n_icc_calc <- length(grep(weighted_icc_prae,colnames(maa_table)))
- 
-            prae_col<-paste("WeightedIccPrae",1:n_icc_calc,sep="_-")
-            post_col<-paste("AcIccPost",1:n_icc_calc,sep="_+")
-            test_pairs<-paste(post_col,prae_col,sep="_minus_")
-            statistic_table <- data.frame("Pairs"=  test_pairs)
-            statistic_table[,c("p_values","median_test","conf_int_left","conf_int_right","median_calc","mean_calc")] <- rep(NA, n_icc_calc)
-            rownames(statistic_table)<-statistic_table[,"Pairs"]
-            for(i in 1:n_icc_calc){
-                    
-                   weighted_icc_col <- maa_table[[paste(weighted_icc_prae,i,sep="_-")]]
-                   acquiror_icc_col <- maa_table[[paste(acquiror_icc_prae,i,sep="_+")]]
-                   statistic_table_row <- paste(paste(acquiror_icc_prae,i,sep="_+"),paste(weighted_icc_prae,i,sep="_-"),sep="_minus_")
-                   ##test_result <- wilcox.test( weighted_icc_col,acquiror_icc_col,mu=0,alt="two.sided",paired=T,conf.int=T)
-                   test_result <- wilcox.test( acquiror_icc_col,weighted_icc_col,mu=0,alt="two.sided",paired=T,conf.int=T)
-                   statistic_table[statistic_table_row,"p_values"]<-test_result$ p.value
-                   statistic_table[statistic_table_row,"median_test"]<-test_result$ estimate 
-                   statistic_table[statistic_table_row,"conf_int_left"]<-test_result$ conf.int[1]
-                   statistic_table[statistic_table_row,"conf_int_right"]<-test_result$ conf.int[2]
-                   statistic_table[statistic_table_row,"median_calc"]<-median(acquiror_icc_col,na.rm=T)-median(weighted_icc_col,na.rm=T)
-                   statistic_table[statistic_table_row,"mean_calc"]<-mean(acquiror_icc_col,na.rm=T)-mean(weighted_icc_col,na.rm=T)
-                   }
-            
-             rownames(statistic_table)<-1:n_icc_calc
-             statistic_table
-            }   
-
-Wilcoxon_Rank_Table<-   Wilcoxon_Signed_Rank()         
-            
-Plot_Wilcoxon_Rank_Result<-function(test_table=Wilcoxon_Rank_Table,median_values="median_test",conf_left="conf_int_left",conf_right="conf_int_right") {           
-            plot_columns <-c(median_values,conf_left,conf_right)
-            n_row <- nrow(test_table)
-            plot_table<-data.frame<-NULL
-                for(i_col in  plot_columns){
-                    col_values <- data.frame(cbind(1:n_row,test_table[,i_col], i_col), stringsAsFactors=FALSE)
-                    plot_table <- rbind( plot_table,col_values)
-                }
-            colnames(plot_table)<-c("X","Values","statistic")
-            plot_table[,"statistic"] <-  ifelse(plot_table[,"statistic"]=="median_test","median",ifelse(plot_table[,"statistic"]=="conf_int_left",
-                                "left interval border","right interval border"))
-                                
-            plot_table[,"X"] <- as.integer(plot_table[,"X"])
-            plot_table[,"Values"] <- as.numeric( plot_table[,"Values"])
-                ggplot(data=plot_table, aes_string(x="X",y="Values",group="statistic", colour="statistic")) + 
-                geom_line() + geom_point() + xlab("Range between Interval - Pairs")+ylab("")+
-                ggtitle("Wicoxon Median Estimate with 95 % Confidence Interval") +
-                geom_abline(aes(slope=0,intercept=0), color="black")+
-                scale_x_continuous(breaks = round(seq(min(plot_table$X), max(plot_table$X), by = 2),1)) 
-                
-            }  
-            
-Plot_Wilcoxon_Rank_Result()            
-
-Calc_IccDiff_Statistic<-function(maa_table = MaATable,icc_difference = "IccDifference"){
-            n_icc_calc <- length(grep(icc_difference,colnames(maa_table)))        
-            statistic_table <- data.frame("mean"=  rep(NA,n_icc_calc))
-            statistic_table [,c("sd","median","first quantile","third quantile")] <- rep(NA,n_icc_calc)
-            
-            for(i_col in 1:n_icc_calc){
-                    
-                   col_values <- maa_table[,paste(icc_difference,i_col,sep="_"),] 
-                   statistic_table[i_col,"mean"] <- mean(col_values,na.rm=T)
-                   statistic_table[i_col,"sd"] <- sd(col_values,na.rm=T)
-                   statistic_table[i_col,"median"] <- median(col_values,na.rm=T)
-                   statistic_table[i_col,"first quantile"] <- quantile(col_values,na.rm=T, probs= 0.25)
-                   statistic_table[i_col,"third quantile"] <- quantile(col_values,na.rm=T, probs= 0.75)
-                   }
-            statistic_table
-            }
-            
-IccDiffStatistic<-Calc_IccDiff_Statistic()    
-            
-Plot_IccDiff_Statistic<-function(icc_diff_statistic = IccDiffStatistic ){        
-            n_row<-nrow(icc_diff_statistic)
-            plot_table <- data.frame(cbind(1:n_row,icc_diff_statistic[,"median"],"median"),stringsAsFactors=FALSE)
-            plot_table <- rbind(plot_table,data.frame(cbind(1:n_row,icc_diff_statistic[,"first quantile"],"first quantile"),stringsAsFactors=FALSE))
-            plot_table <- rbind(plot_table,data.frame(cbind(1:n_row,icc_diff_statistic[,"third quantile"],"third quantile"),stringsAsFactors=FALSE))
-            
-            colnames(plot_table) <- c("X","Values","statistic")
-            plot_table[,"X"] <- as.integer(plot_table[,"X"])
-            plot_table[,"Values"] <- as.numeric( plot_table[,"Values"])
-                ggplot(data=plot_table, aes_string(x="X",y="Values",group="statistic", colour="statistic")) + 
-                geom_line() + geom_point() + xlab("Range between Interval - Pairs")+ylab("")+
-                ggtitle("Median Difference between Post and Prae M&A ICC") +
-                geom_abline(aes(slope=0,intercept=0), color="black")+
-                scale_x_continuous(breaks = round(seq(min(plot_table$X), max(plot_table$X), by = 2),1)) 
-            }
-            
-Plot_IccDiff_Statistic()            
-            
