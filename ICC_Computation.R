@@ -5,14 +5,14 @@
 ## M&A von denen danach(post ICC) unterscheiden. Die Tabelle wird später 
 ## noch durch Berechnungen in dem R-Code Correlation_Computation.r ergänzt.
 
-## Die ICCs werden nach Marktwerten und entsprechend der erworbenen
-## Unternehmensanteile gewichtet. Weil es keinen bestimmten Zeitpunkt vor 
+## Die ICCs werden nach Marktwerten und entsprechend den erworbenen
+## Unternehmensanteilen gewichtet. Weil es keinen bestimmten Zeitpunkt vor 
 ## und nach M&A gibt, der sich zur Bestimmung einer ICC-Differenz  anbietet, 
 ## werden vor und nach M&A Zeiträume definiert. Innerhalb dieser Zeiträume 
 ## werden für eine bestimmte Spanne, rollierend durchschnittliche ICC post/prae 
 ## bestimmt. Aus den Differenzen der korrespondierenden post und prae ICCs werden 
 ## dann die ICC Differenzen bestimmt. (Korrespondierende ICCs wären post und prae ICCs,
-## dessen Berechnungsfenster sich in gleicher zeitlicher Distanz vor und nach M&A befindet.)
+## deren Berechnungsfenster sich in gleicher zeitlicher Distanz vor und nach M&A befindet.)
 
 
 
@@ -90,8 +90,8 @@
 ## 5. 	Die Funktion Compute_MandA_Table() erstellt die finale Tabelle, die für jeden 
 ##      M&A die ICCs von Acquiror und Target vor bzw. für Target auch nach 
 ##      M&A angibt. Durch Aufruf von Funktionen 5.3 bis 5.4 (in Compute_MandA_Table())
-##      werden die gewichteten ICC aus den ICC von Target und Aquiror bestimmt und die
-##      Differenz zu den Korrepondierenden ICCs nach M&A.
+##      werden die gewichteten ICCs aus den ICCs von Target und Aquiror bestimmt und die
+##      Differenz zu den korrepondierenden ICCs nach M&A.
 ## 5.1	Compute_MandA_Table(): Ruft für jeden M&A Sdc_Get(),Icc_Get() und Company_Get() auf, 
 ##      berechnet aus den erhaltenen Informationen alle ICCs zum M&A und gibt 
 ##      die Daten in einer neuen Tabelle zurück.
@@ -99,8 +99,8 @@
 ##      zusätzliche Spalte zur Differenzierung von M&A nach SIC-Unterschieden an.
 ## 5.3	Calc_Weighted_Icc_prae(): Berechnet aus MV und ICC des Targets und Acquirors sowie dem
 ##      am Target erworbenen Unternehmensanteil die gewichtete ICC vor M&A.
-## 5.4	Calc_Icc_Diff(): Berechnet aus gewichteten ICC und korrespondierenden post M&A ICC des 
-##      Acquirors die ICC Differenz die durchc den M&A entstanden ist.     
+## 5.4	Calc_Icc_Diff(): Berechnet aus gewichteten ICCs und korrespondierenden post M&A ICCs des 
+##      Acquirors die ICC Differenz, die durchc den M&A entstanden ist.     
 
 
 library(zoo)
@@ -211,7 +211,7 @@ Company_Set <- function(DscdCol = "DSCD", CharacCol = "Properties",
             COMPCol 
         }
 
-##2.4	Icc_Period_Set(): Funktion, durch die das prae und post Zeitintervall um den 
+##2.4	Icc_Period_Set(): Funktion, durch die prae und post Zeitintervall um den 
 #####   M&A definiert werden und für deren Zeiträume die ICCs entnommen werden. 
 #####   Die Funktion wird später nicht direkt aufgerufen, sondern mit anderen 
 #####   "Set()"-Funktionen durch die Funktion Data_Prop() in der Liste DataPropList 
@@ -230,7 +230,7 @@ Icc_Period_Set <- function(Close = 1, Far = 63, Size = 12,
         
         ##  Aufruf von Funktion Extend_Fun(), um gegebenenfalls CompanyData Datensatz um neue
         ##  Spalten für Monate zu erweitern, falls durch Definition des Zeitfensters Daten
-        ##  für Zeitpunkte abgefragt werden könnten, für die keine Spalten vorhanden sind.
+        ##  für Zeitpunkte abgefragt werden sollten, für die keine Spalten vorhanden sind.
         Extend_Fun(TableStored,ceiling(Far/12))
         
         IccPeriodData <- list(Close = Close, Far = Far, 
@@ -467,7 +467,7 @@ Icc_Get <- function(DataPropList, TableStored, access_data = AccessData, Sample=
         ICC <- data.frame("TaIcc" = ICC, "AcIccPrae" = ICC,"AcIccPost" = ICC)
 
             temp  <- IccTable[[DscdCol]] == as.character(SdcData$TargetDscd) ############
-            ## Filterung der Target-Datastream Codes Einträge im ICC Datensatz
+            ## Filterung der Target-Datastream Codeeinträge im ICC Datensatz
             
             tempTA  <- IccTable[temp, c(DatCol,IccCol),with=F]          
             ## Neuzuweisung des ICC Datensatzes mit ausschließlich Informationen zum Target 
@@ -531,8 +531,8 @@ Company_Get <- function(DataPropList, TableStored, access_data = AccessData){
 		MinObs  <- PeriodData$MinObs
 		Size 	<- PeriodData$Size
         
-        ## Die Entnahme und Berechnung der MV-Mittelwerte ist ähnlich der der ICC.
-        ## Es entfällt aber die Prüfung auf nicht eingetragenen Daten, weil im
+        ## Die Entnahme und Berechnung der MV-Mittelwerte sind ähnlich der der ICC.
+        ## Es entfällt aber die Prüfung auf nicht eingetragene Daten, weil im
         ## CompanyData Datensatz jedes Datum mit mindestens einem NA-Wert enthalten
         ## ist. Außerdem sind die Daten selbst Spaltennamen und können ohne Überprüfung
         ## mit "is.element" direkt ausgewählt werden.
@@ -545,7 +545,7 @@ Company_Get <- function(DataPropList, TableStored, access_data = AccessData){
 		temp <- CompanyTablePrae[[DscdCol]] == SdcData$TargetDscd               
         Mv$TaMv <- as.numeric(CompanyTablePrae[,DatPrae,with=F][temp])	            
 		## hier direkte Auswahl der Daten über Spaltennamen ohne is.element oder
-        ## Überprüfung auf nicht verzeichneten Daten
+        ## Überprüfung auf nicht verzeichnete Daten
         
 		temp <- CompanyTablePrae[[DscdCol]] == SdcData$AcquirorDscd             
 		Mv$AcMvPrae <- as.numeric(CompanyTablePrae[,DatPrae,with=F][temp])	        
@@ -565,7 +565,7 @@ Company_Get <- function(DataPropList, TableStored, access_data = AccessData){
 
 
 ##4.5	Data_Retrieve(): Auf Sdc_Get(), Icc_Get() und Company_Get() wird
-#####   nicht direkt zugegriffen. Sondern durch Data_Retrieve() wird eine
+#####   nicht direkt zugegriffen, sondern durch Data_Retrieve() wird eine
 #####   Liste der Funktionen erstellt, über die auf die Funktionen 
 #####   4.1, 4.3,  4.4 zugegriffen werden kann. Die Liste speichert außerdem
 #####   die jeweils zum M&A entnommenen und berechneten Daten in MaaData.
@@ -613,7 +613,7 @@ Compute_MandA_Table <- function(DataPropList,TableStored){
             ## In den folgenden zehn Zeilen wird der ICC Datensatz auf einen
             ## neuen verkleinert, in dem nur diejenigen Zeilen noch vorhanden sind,
             ## in denen Daten für Unternehmen gespeichert sind, die auch im SDC Datensatz
-            ## sind.
+            ## aufgeführt sind.
             AcquirorDscds <- DataPropList$Get()$SDC$AcCol
             TargetDscds <- DataPropList$Get()$SDC$TaCol
             IccDscdCol <- DataPropList$Get()$ICC$DscdCol
@@ -724,8 +724,8 @@ Calc_Weighted_Icc_prae <- function(maa_table = MaATable,acquiror_icc_prae = "AcI
             ## Unternehmensanteil beinhaltet
             share <- maa_table[,share_acquired] 
             
-            ## Index i ist Zahl die an die Namen "AcIccPrae" und "TaIcc" angehängt werden und
-            ## so die richtigen Target und Acquiror ICC bzw. MV Spalten vom MaATable zu selektieren. 
+            ## Index i ist Zahl, die an die Namen "AcIccPrae" und "TaIcc" angehängt wird, um
+            ## so die richtigen Target- und Acquiror- ICC bzw. MV Spalten vom MaATable zu selektieren. 
             for(i in 1:n_icc_calc){
             
                    ## Auswahl der Spalten   
@@ -744,14 +744,14 @@ Calc_Weighted_Icc_prae <- function(maa_table = MaATable,acquiror_icc_prae = "AcI
             maa_table
             }
 
-##5.4	Calc_Icc_Diff(): Berechnet aus gewichteten ICC und korrespondierenden post M&A ICC des 
-#####   Acquirors die ICC Differenz die durchc den M&A entstanden ist.            
+##5.4	Calc_Icc_Diff(): Berechnet aus gewichteten ICCs und korrespondierenden post M&A ICC des 
+#####   Acquirors die ICC Differenz, die durchc den M&A entstanden ist.            
 Calc_Icc_Diff <- function(maa_table = MaATable, weighted_icc_prae ="WeightedIccPrae", acquiror_icc_prae ="AcIccPost"){
-            ## Bestimmung, wie viele Berechnungen im Interval vor M&A durchgeführt wurden
+            ## Bestimmung, wieviele Berechnungen im Intervall vor M&A durchgeführt wurden
             n_icc_calc <- length(grep(weighted_icc_prae,colnames(maa_table)))
             n_row <- nrow(maa_table)
               
-            ## Erstellung vom leeren Datensatzes als Vorlage        
+            ## Erstellung eines leeren Datensatzes als Vorlage        
             diff_icc <- data.frame("IccDifference_1"= rep(NA,n_row))
             diff_icc_col_names <- paste("IccDifference",1:n_icc_calc,sep="_")
             diff_icc[,diff_icc_col_names] <- rep(NA,n_row)
@@ -759,8 +759,8 @@ Calc_Icc_Diff <- function(maa_table = MaATable, weighted_icc_prae ="WeightedIccP
             ## Analog zu Calc_Weighted_Icc_prae() werden durch Index i die korrespondierenden 
             ## WeightedICC und AcIccPost ausgewählt und aus ihnen die ICC Differenz der M&As
             ## bestimmt    
-            ## Index i ist Zahl die an die Namen "AcIccPrae" und "TaIcc" angehängt werden und
-            ## so die richtigen Target und Acquiror ICC bzw. MV Spalten vom MaATable zu selektieren.
+            ## Index i ist eine Zahl, die an die Namen "AcIccPrae" und "TaIcc" angehängt wird, um
+            ## so die richtigen Target- und Acquiror- ICC bzw. MV Spalten vom MaATable zu selektieren.
             for(i in 1:n_icc_calc){
                    
                    ## Auswahl der Spalten    
@@ -777,8 +777,27 @@ Calc_Icc_Diff <- function(maa_table = MaATable, weighted_icc_prae ="WeightedIccP
             }
             
 ## Start der Berechnung und Speicherung des Datensatzes           
-    MaATable<-Compute_MandA_Table(DataPropList,TableStored)    
+   
+## ICC_CT
+    MaATable_CT<-Compute_MandA_Table(DataPropList,TableStored)    
 
-    write.table(MaATable,"MaATable.txt",sep=";",col.names=T,row.names=F)
+    write.table(MaATable_CT,"MaATable_CT.txt",sep=";",col.names=T,row.names=F)
     
+## ICC_OJ
+    DataPropList$setICC(IccCol="ICC_OJ")
+    MaATable_OJ<-Compute_MandA_Table(DataPropList,TableStored)    
+
+    write.table(MaATable_OJ,"MaATable_OJ.txt",sep=";",col.names=T,row.names=F)
+
+## ICC_MPEG
+    DataPropList$setICC(IccCol="ICC_MPEG")
+    MaATable_MPEG<-Compute_MandA_Table(DataPropList,TableStored)    
+
+    write.table(MaATable_MPEG,"MaATable_MPEG.txt",sep=";",col.names=T,row.names=F)
+
+## ICC_GLS  
+    DataPropList$setICC(IccCol="ICC_GLS")
+    MaATable_GLS<-Compute_MandA_Table(DataPropList,TableStored)    
+
+    write.table(MaATable_MPEG,"MaATable_GLS.txt",sep=";",col.names=T,row.names=F)
 

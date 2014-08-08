@@ -45,7 +45,7 @@
 ## 1.1  Sp_Composition_Table(): Liest Datensatz ein, der für jeden Monat, in dem ein 
 ##      Unternehmen im S&P 1500 war, dieses Unternehmen mit seinem Datastream Code und 
 ##      dem Monat (plus Jahr) für diesen Monat einmal enthält.  
-## 1.2	Sp_Composition_Table():  Erstellt leeren data.table der Unternehmen der Zeilen 
+## 1.2	Sp_Composition_Table():  Erstellt leeren data.table, der Unternehmen der Zeilen 
 ##      nach und Monate den Spalten nach ordnet.
 ## 1.3	Composition_Logic(): Füllt den von Sp_Composition_Table() erstellten data.table mit 
 ##      logischen Werten je nach Zugehörigkeit des Unternehmens zum S&P 1500. Stellt den, 
@@ -59,7 +59,7 @@
 ##      die Tabellen als Liste. Außerdem wird auf SapData_Complete zugegriffen.
 ## 2.2	SapData_Complete(): Stellt Identität zwischen Datensätzen her, die in einer 
 ##      Liste (in SapData_Read() übergeben) enthalten sind. Das heißt, jeder Datastream 
-##      Code bzw. jedes Unternehmen wird in jedem Datensatz in der List an derselben 
+##      Code bzw. jedes Unternehmen wird in jedem Datensatz in der Liste an derselben 
 ##      Position auftauchen.
 
 ## 3.	Zum Erstellen eines data.table, der, ähnlich dem von Sp_Composition_Table() Composition_Logic() unter 
@@ -77,7 +77,7 @@
 
 ## 5.	Zur Bestimmung von Parametern, auf deren Grundlage die Korrelationen 
 ##      berechnet werden sollen. Set_Cor_Options() ist die wichtigste Funktion. 
-##      Die von ihr zurückgegebene Liste, legte fest, nach welchen Kriterien die 
+##      Die von ihr zurückgegebene Liste, legt fest, nach welchen Kriterien die 
 ##      Korrelationen bestimmt werden sollen z.B. Zeitraum, Toleranz für fehlende 
 ##      Werte Berechnungsmethode etc.. Genauere Informationen sind im Dokument 
 ##        "Erklärung_Set_Cor_Options"
@@ -477,19 +477,6 @@ Calc_Index_Values <- function(sp_composition_dscd = SpCompositionDscd,cor_option
         sp_index_value_two <- data.table("EntityProperty"=-(period_length:0))
         sp_index_value_one[,names(SapData[[cor_options$EntityProperty]]):=as.numeric(NA)]
         sp_index_value_two[,names(SapData[[cor_options$EntityProperty]]):=as.numeric(NA)]
-        
-        
-            YearsMean <- function(Date){
-                Years <- grep(substr(Date,1,4),names(SapData[[cor_options$EntityProperty]]))
-                YearsMean <- mean(rowMeans(SapData[[cor_options$EntityProperty]][sap_composition_period,names(SapData[[cor_options$EntityProperty]])[Years],with=F],na.rm=T),na.rm=T) 
-                YearsMean}
-            
-            IntervalMean <- function(index){ 
-               year<<-c(year,names(SapData[[cor_options$EntityProperty]])[index[2]])    
-               interval_index <- names(SapData[[cor_options$EntityProperty]])[(index[1]+1):index[2]]
-               interval_mean <- mean(rowMeans(SapData[[cor_options$EntityProperty]][sap_composition_period,interval_index,with=F],na.rm=T),na.rm=T)  
-               interval_mean}
-        
        
         ## Berechnung für Methode "one"
         for(col_name in names(SapData[[cor_options$EntityProperty]])[-(1:4)]){
@@ -510,10 +497,7 @@ Calc_Index_Values <- function(sp_composition_dscd = SpCompositionDscd,cor_option
                     ## Bestimmung Spaltenindizes für spätere Auswahl
                     col_index <- which(is.element(names(SapData[[cor_options$EntityProperty]]),substr(col_Date,1,7)))
                     }
-                else{
-                    col_index <- which(names(SapData[[cor_options$EntityProperty]])== col_name)
-                    col_index <- (col_index-period_length):col_index
-                    }
+
             ## Berechnung der Zeitreihe        
             sp_index_value_one[[col_name]]<-(colMeans(SapData[[cor_options$EntityProperty]][sp_composition_dscd[[col_name]],col_index,with=F],na.rm=T))
             ## Vom Datensatz SapData werden nur die Unternehmen ausgewählt, die zum Datum "col_name" im
@@ -552,10 +536,6 @@ Calc_Index_Values <- function(sp_composition_dscd = SpCompositionDscd,cor_option
                     ## Verlängerung bis zum ersten Datum der Erfassung der S&P 1500 Zusammensetzung.
                     if( length(sp_col_index)<(period_length+1)){sp_col_index<-c(7,sp_col_index)}
                     }
-                else{
-                    col_index <- which(names(SapData[[cor_options$EntityProperty]])== col_name)
-                    col_index <- (col_index-period_length):col_index
-                    sp_col_index <- which(is.element(names(sp_composition_dscd),names(SapData[[cor_options$EntityProperty]])[col_index]))}
             
             if((length(sp_col_index)<1)){next}
             
@@ -568,13 +548,6 @@ Calc_Index_Values <- function(sp_composition_dscd = SpCompositionDscd,cor_option
             ## Index gewesen sind (Betrachtungszeitraum wird durch Spaltenindizes sp_col_index), definiert. 
             sap_composition_period <- unique(as.vector(as.matrix(sp_composition_dscd[,sp_col_index,with=F])))
                 
-                if(FALSE){ ## computes mean values for each year in the periods
-                    sp_index_value_two[[col_name]]<-sapply(substr(col_Date,1,4),FUN=YearsMean)
-                    }
-                if(FALSE){ ## computes mean values for each period 
-                    col_index<-c((col_index[1]-12),col_index)
-                    sp_index_value_two[[col_name]]<-rollapply(col_index,width=2,FUN=IntervalMean)
-                    }
                 if(TRUE){
                     ##Berechnung der Zeitreihe analog zu Methode "one"    
                     sp_index_value_two[[col_name]]<-colMeans(SapData[[cor_options$EntityProperty]][sap_composition_period,col_index,with=F],na.rm=T)
@@ -588,11 +561,11 @@ Calc_Index_Values <- function(sp_composition_dscd = SpCompositionDscd,cor_option
 
 ## 7.   Berechnung der Korrelation
 ##      Funktion Calc_Industry_Ts() entnimmt die Zeitreihe, Funktion Calc_Corr() bestimmt 
-##      Korrelation, Funktion Calc_MandA_Cor() wendet Calc_Corr() auf jeden M&A im SDC Datensat
+##      Korrelation, Funktion Calc_MandA_Cor() wendet Calc_Corr() auf jeden M&A im SDC Datensatz
 ##      ("SDC_Dataset.csv") an.    
 
 ##7.1	Calc_Corr(): Berechnet die Korrelation zwischen zwei Industriesegmenten, die 
-#####   durch einen M&A Eintrag in SDC Datensatz definiert sind. Die Zeitreihen für jeden SIC-Code 
+#####   durch einen M&A Eintrag im SDC Datensatz definiert sind. Die Zeitreihen für jeden SIC-Code 
 #####   werden durch jeweiligen Aufruf der Funktion Calc_Industry_Ts() in Calc_Corr() bestimmt.
 Calc_Corr<-function(sp_composition_logic,sap_data,SicAcquiror,SicTarget,Date,cor_options=CorCalcOptions,index_values){
      
@@ -628,11 +601,11 @@ Calc_Corr<-function(sp_composition_logic,sap_data,SicAcquiror,SicTarget,Date,cor
         }    
         
         ## Falls Methode "two" angewendet werden soll, muss auch ein Zeitraum bestimmt werden,
-        ## innerhalbe dessen alle S&P 1500 Unternehmen bestimmt werden     
+        ## innerhalb dessen alle S&P 1500 Unternehmen bestimmt werden     
         if(cor_options$Method == "two"){
             ## if(cor_options$BreakYear=="cut" | cor_options$BreakYear=="extend"){DateSap<-Date[Date>=1995]}##;Date<-DateSap}
             ## Industriekorrelationen werden mit S&P 1500 Unternehmen berechnet
-            ## Das Intervall DateSap wird bei unter 1995 abgeschnitten, weil zuvor keine
+            ## Das Intervall DateSap wird unter 1995 abgeschnitten, weil zuvor keine
             ## Angaben zur S&P 1500 Zusammensetzung vorhanden sind
             DateSap <- Date[Date>=1995]
             if(length(DateSap)==0){return(NA)}
@@ -693,7 +666,7 @@ Calc_Industry_Ts<-function(sp_composition_logic,sap_data,Date,DateSap,Sic,SicDig
         ## im Industriesegment vorliegen. Ist das nicht der Fall, ruft sich die Funktion
         ## wieder selbst auf, wechselt aber im nächsten Schritt auf ein übergeordnetes 
         ## Industriesegment. Das wird erreicht, indem zu Beginn alle S&P Unternehmen
-        ## selektiert werden, deren SIC Code identisch mit dem untersuchten SIC Code sind.
+        ## selektiert werden, deren SIC Codes identisch mit dem untersuchten SIC Code sind.
         ## Falls das zu wenige sind, werden bei der nächsten Prüfung nur die ersten drei 
         ## SIC Stellen verglichen, dann zwei etc., bis genug Beobachtungen vorliegen oder
         ## abgebrochen wird.    
@@ -720,7 +693,7 @@ Calc_Industry_Ts<-function(sp_composition_logic,sap_data,Date,DateSap,Sic,SicDig
         ## Der Ausschnitt unterscheidet sich, zwischen den rekursiven Aufrufen dieser Funktion.
         ## Je mehr Rekursionen pro Unternehmen gestartet werden, desto mehr Stellen werden
         ## von dem SIC Code (SicDigits wird kleiner 4,3,2,1) abgeschnitten. So wird von spezifischen
-        ## zu übergeordneten Industrie Segmenten geprüft. 
+        ## zu übergeordneten Industriesegmenten geprüft. 
         Boolean <- substring(sp_composition_logic$SIC_four,1,SicDigits)==substring(Sic,1,SicDigits)
         Boolean[is.na(Boolean)] <- FALSE
 
@@ -731,7 +704,7 @@ Calc_Industry_Ts<-function(sp_composition_logic,sap_data,Date,DateSap,Sic,SicDig
                 ## M&A berücksichtigt
                 Spalten <- Boolean*sp_composition_logic[[max(DateSap)]]
                 
-                ## Berechnung der Industrie Zeitreihe (für Segment)
+                ## Berechnung der Industrie-Zeitreihe (für Segment)
                 IndustryTs <- sap_data[[cor_options$EntityProperty]][as.logical(Spalten),c("DSCD","SIC_four",Date),with=F]
                 } 
             else if(cor_options$Method == "two"){
@@ -757,15 +730,6 @@ Calc_Industry_Ts<-function(sp_composition_logic,sap_data,Date,DateSap,Sic,SicDig
             ## Rekursiver Aufruf
             else {Calc_Industry_Ts(sp_composition_logic,sap_data,Date,DateSap,Sic,SicDigits-1,cor_options)}
             }
-            
-        else if(cor_options$Method == "three"){
-            Spalten <- Boolean*sp_composition_logic[,Date,with=F]
-            IndustryTs <- sapply(Date,function(i_Date){sap_data[[cor_options$EntityProperty]][[i_Date]][as.logical(Spalten[[i_Date]])]},simplify=F,USE.NAMES = TRUE) ##
-
-            if(all(sapply(IndustryTs,length)>=NoCompReq)){          ## test whether there are too less observations per company or to less companies for the industry
-                return(IndustryTs)}     ## returns only those companies with enough observations
-            else {Calc_Industry_Ts(sp_composition_logic,sap_data,Date,DateSap,Sic,SicDigits-1,cor_options)}
-            }
 
         }   
  
@@ -788,7 +752,7 @@ Calc_MandA_Cor<-function(sp_composition_logic = SPCompositionLogic,sap_data = Sa
         
         N_Values <- nrow(sdc_data)
         
-        ## Erstellung eines leeren Datensatz, in dem Korrelationen gespeichert werden sollen
+        ## Erstellung eines leeren Datensatzes, in dem Korrelationen gespeichert werden sollen
         Correlations <- rep(NA,N_Values)
         
         ## for-Schleife startet Prüfung für jeden M&A (jede Zeile) im Datensatz 
@@ -815,10 +779,10 @@ Calc_MandA_Cor<-function(sp_composition_logic = SPCompositionLogic,sap_data = Sa
 
 ## Berechnungen für Auswertung
 
-## Zunächst Berechnung mit Methode "one" und direkten Korrelation zwischen Industriesegmenten 
+## Zunächst Berechnung mit Methode "one" und direkter Korrelation zwischen Industriesegmenten 
     MethOne_TotalCor<-Calc_MandA_Cor(SPCompositionLogic,SapData,CorCalcOptions)
 
-## Als Zweites Berechnung mit Korrelation von Residuen einer Regression der Segmente auf den S&P 1500 
+## Als zweites Berechnung mit Korrelation von Residuen einer Regression der Segmente auf den S&P 1500 
     CorCalcOptions$SpExessCor<-T
     MethOne_ResCor<-Calc_MandA_Cor(SPCompositionLogic,SapData,CorCalcOptions)    
     
@@ -826,13 +790,13 @@ Calc_MandA_Cor<-function(sp_composition_logic = SPCompositionLogic,sap_data = Sa
     CorCalcOptions$Method<-"two"
     MethTwo_ResCor<-Calc_MandA_Cor(SPCompositionLogic,SapData,CorCalcOptions)    
  
-## Berechnung mit Methode "two" und direkten Korrelation zwischen Segmenten   
+## Berechnung mit Methode "two" und direkter Korrelation zwischen Segmenten   
     CorCalcOptions$SpExessCor<-F
     MethTwo_TotalCor<-Calc_MandA_Cor(SPCompositionLogic,SapData,CorCalcOptions)
 
 
-## Zusammenfassung der Date und Speicherung des Datensatzes    
+## Zusammenfassung der Daten und Speicherung des Datensatzes    
     KorrTable <- cbind(SdcData[,c("Date_Effective","Ac_SIC","Ta_SIC"),with=F], MethOne_TotalCor , MethOne_ResCor, MethTwo_ResCor, MethTwo_TotalCor)
 
-    write.table(KorrTable,"KorrTable.txt",sep=";",col.names=T,row.names=F))
+    write.table(KorrTable,"KorrTable.txt",sep=";",col.names=T,row.names=F)
   
