@@ -217,8 +217,8 @@ Company_Set <- function(DscdCol = "DSCD", CharacCol = "Properties",
 #####   "Set()"-Funktionen durch die Funktion Data_Prop() in der Liste DataPropList 
 #####   gespeichert. Außerdem wird innerhalb der Funktion die Funktion Extend_Fun() 
 #####   aufgerufen, um die Länge des CompanyData Datensatzes anzupassen.
-Icc_Period_Set <- function(Close = 3, Far = 16, Size = 6, 
-				MinObs = 2){	
+Icc_Period_Set <- function(Close = 1, Far = 63, Size = 12, 
+				MinObs =6){	
         ##	Close: Wieviele Monate vor/nach M&A soll das prae/post ICC-Zeitintervall beginnen         
         ##  Far: Entfernung des vom M&A am weitesten entfernten Monats im Zeitintervall
         ##  Size: ICCs werden nicht als ein Mittelwert für den ganzen durch Close und 
@@ -251,7 +251,6 @@ Extend_Fun <- function(TableStored = TableStored, years = 6){
 		time$mon <- time$mon+1:monthAdd
 		time<-substr(as.Date(time),1,7)
 		CompanyTable[,time] <- newRow
-        ##CompanyTable[,{time}:=newRow]       ##########################################
         
 		Tables <- TableStored$Get()
 		Tables$COMPANY <- CompanyTable
@@ -343,7 +342,7 @@ Company_Prop_List_Set <- function(TableStored = TableStored, DataPropList){
 		CompanyTable <- TableStored$Get()$COMPANY 
 		CompProp  <- DataPropList$Get()$COMPANY
 		CharacCol <- CompProp$CharacCol
-		CharacCol <- CompanyTable[[CharacCol]]          ##
+		CharacCol <- CompanyTable[[CharacCol]]          
 		CharacCol <- as.factor(CharacCol)		
 
 		Characs <- levels(CharacCol)
