@@ -533,16 +533,17 @@ ICC_Get2<- function(DataPropList, TableStored, access_data = AccessData, Sample=
         IccCol  <- IccProp$IccCol
         
         ## Zwischenspeicherung der Zeitfenster Daten
-        DatPrae <- sort(PeriodData$DatPrae)
-        DatPost <- sort(PeriodData$DatPost)
-        MinObs  <- PeriodData$MinObs
-        Size    <- PeriodData$Size
+        ##DatPrae <- sort(PeriodData$DatPrae)
+        ##DatPost <- sort(PeriodData$DatPost)
+        ##MinObs  <- PeriodData$MinObs
+        ##Size    <- PeriodData$Size
         
         ## Aufruf des ICC Datensatzes
         IccTable  <- IccTable[,c(DatCol,DscdCol,IccCol),with=F]             ##
         
         ## data.frame zur Speicherung der ICCs
-        ICC <- rep(NA,length(DatPrae))
+        ##ICC <- rep(NA,length(DatPrae))
+        ICC <- rep(NA,2)
         
         ## Am Ende soll ein Dataframe mit ICC Zeitreihen für das Target vor, den
         ## Acquiror vor und nach M&A im ICC data.frame gespeichert werden.
@@ -555,40 +556,49 @@ ICC_Get2<- function(DataPropList, TableStored, access_data = AccessData, Sample=
             tempTA  <- IccTable[temp, c(DatCol,IccCol),with=F]          
             ## Neuzuweisung des ICC Datensatzes mit ausschließlich Informationen zum Target 
             
-            tempDat <- is.element(tempTA[[DatCol]],DatPrae)
+            ##tempDat <- is.element(tempTA[[DatCol]],DatPrae)
+            tempDat <- tempTA[[DatCol]]==DatPrae
             ## Suche nach Einträgen zum prae Zeitfenster im Target ICC Datensatz
             
-            IccExist <- is.element(DatPrae,tempTA[[DatCol]][tempDat])       
+            ##IccExist <- is.element(DatPrae,tempTA[[DatCol]][tempDat])       
             ## Um zu verhindern, dass fehlende Werte (nicht NA, sondern gar 
             ## kein Eintrag zu dem Datum) im Untersuchungszeitraum nicht
             ## verschwinden, müssen auch deren Positionen ermittelt werden und 
             ## beim Eintrag in die ICC Tabelle berücksichtigt werden
             
-            ICC[IccExist,"TaIcc"] <- tempTA[tempDat, IccCol,with=F]         
+            ICC[1,"TaIcc"] <- tempTA[tempDat, DatCol,with=F]
+            ICC[2,"TaIcc"] <- tempTA[tempDat, IccCol,with=F]
+            ##ICC[IccExist,"TaIcc"] <- tempTA[tempDat, IccCol,with=F]         
             ## Zuweisung der ICCs zum leeren data.frame "ICC"
             
             ## Analoge Berechnung für ICC des Acquirors
             temp  <- IccTable[[DscdCol]] == SdcData$AcquirorDscd            
             tempAC  <- IccTable[temp, c(DatCol,IccCol),with=F]              
-            tempDat <- is.element(tempAC[[DatCol]],DatPrae)                 
-            IccExist <- is.element(DatPrae,tempAC[[DatCol]][tempDat])       
-            ICC[IccExist,"AcIccPrae"] <- tempAC[tempDat, IccCol,with=F]        
-
-            tempDat <- is.element(tempAC[[DatCol]],DatPost)     
-            IccExist <- is.element(DatPost,tempAC[[DatCol]][tempDat])  
-            ICC[IccExist,"AcIccPost"] <- tempAC[tempDat, IccCol,with=F]     
+            ##tempDat <- is.element(tempAC[[DatCol]],DatPrae)                 
+            ##IccExist <- is.element(DatPrae,tempAC[[DatCol]][tempDat])
+            tempDat <- tempAC[[DatCol]]==DatPrae
+            ##ICC[IccExist,"AcIccPrae"] <- tempAC[tempDat, IccCol,with=F]        
+            ICC[1,"AcIccPrae"] <- tempAC[tempDat, DatCol,with=F]
+            ICC[2,"AcIccPrae"] <- tempAC[tempDat, IccCol,with=F]
+            
+            ##tempDat <- is.element(tempAC[[DatCol]],DatPost)     
+            ##IccExist <- is.element(DatPost,tempAC[[DatCol]][tempDat])  
+            tempDat <- is.element(tempAC[[DatCol]],DatPost)  
+            ##ICC[IccExist,"AcIccPost"] <- tempAC[tempDat, IccCol,with=F]
+            ICC[1,"AcIccPost"] <- tempAC[tempDat, DatCol,with=F]
+            ICC[2,"AcIccPost"] <- tempAC[tempDat, IccCol,with=F]            
           
             ## Im folgenden wird der data.frame "ICC" in ein Objekt vom Typ zoo umgewandelt.
             ## Darin werden für jede Spalte (TaIcc, AcIccPrae, AcIccPost) rollierend Mittelwerte
             ## bestimmt. Sollten pro Berechnungszeitraum weniger Beobachtungen vorhanden sein
             ## als durch "MinObs" definiert, findet keine Berechnung statt, sondern es wird ein
             ## NA zurückgegeben.
-		CalcMean<-function(x){
-			if((Size-sum(is.na(x))) >= MinObs){mean(x,na.rm=T)}
-			else NA}
+		##CalcMean<-function(x){
+		##	if((Size-sum(is.na(x))) >= MinObs){mean(x,na.rm=T)}
+		##	else NA}
 	
-		ICC <- zoo(ICC)
-		ICC <- rollapply(ICC,FUN = CalcMean,width = Size)
+		##ICC <- zoo(ICC)
+		##ICC <- rollapply(ICC,FUN = CalcMean,width = Size)
 		ICC	
 		}        
         
