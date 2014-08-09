@@ -849,10 +849,10 @@ Data_Retrieve <- function(){
 Data_Retrieve2 <- function(){
 
         MaaData <- list(NULL)
-        retrieveSdc <- function(...){MaaData$SDC <<- Sdc_Get(...)}
-        retrieveIcc <- function(...){MaaData$ICC <<- Icc_Get(...)}
-        retrieveCompany <- function(...){MaaData$COMPANY <<- Company_Get(...)}
-        retrieveIccPeriod <- function(...){MaaData$ICCPeriod <<- Icc_Period_Get(...)}
+        retrieveSdc <- function(...){MaaData$SDC <<- Sdc_Get2(...)}
+        retrieveIcc <- function(...){MaaData$ICC <<- Icc_Get2(...)}
+        retrieveCompany <- function(...){MaaData$COMPANY <<- Company_Get2(...)}
+        retrieveIccPeriod <- function(...){MaaData$ICCPeriod <<- Icc_Period_Get2(...)}
         Get <- function()MaaData
         
         list(retrieveSdc = retrieveSdc, retrieveIcc = retrieveIcc, retrieveCompany = retrieveCompany, 
@@ -929,6 +929,68 @@ Compute_MandA_Table <- function(DataPropList,TableStored){
                     AccessData$Get()$ICC$TaIcc, AccessData$Get()$ICC$AcIccPrae, AccessData$Get()$ICC$AcIccPost,
                     AccessData$Get()$COMPANY$TaMv, AccessData$Get()$COMPANY$AcMvPrae, AccessData$Get()$COMPANY$AcMvPost)	
             }
+            
+            
+Compute_MandA_Table2 <- function(DataPropList,TableStored){
+    ## Zuerst wird ein kleinerer ICC Datensatz erstellt, um die Berechnungen zu
+    ## beschleunigen. Dann wird eine leere Tabelle aufgebaut, in der später die
+    ## M&A Daten gespeichert werden.
+    ## In der for-Schleife wird jeder M&A im SDC Datensatz durchlaufen, durch
+    ## die retrieve SDC/ICC/Company Aufrufe die M&A Daten und ICCs entnommen und danach 
+    ## im Datensatz gespeichert. Außerdem wird eine Spalte zur Klassifizierung des M&As
+    ## nach SIC Unterschieden angehängt (bis zu welcher SIC-Ziffer sich die M&A
+    ## Partner ähneln bzw. unterscheiden).
+        ## Auswahl der Datensätze
+        SdcTable <- TableStored$Get()$SDC
+        IccTable <- TableStored$Get()$ICC
+        
+        laenge <- nrow(SdcTable)
+        
+        ## Reduzierung des ICC Datensatzes auf relevante Spalten 
+        IccTable <- IccTable[,as.character(DataPropList$Get()$ICC),with=F]
+        
+            ## In den folgenden zehn Zeilen wird der ICC Datensatz auf einen
+            ## neuen verkleinert, in dem nur diejenigen Zeilen noch vorhanden sind,
+            ## in denen Daten für Unternehmen gespeichert sind, die auch im SDC Datensatz
+            ## aufgeführt sind.
+            AcquirorDscds <- DataPropList$Get()$SDC$AcCol
+            TargetDscds <- DataPropList$Get()$SDC$TaCol
+            IccDscdCol <- DataPropList$Get()$ICC$DscdCol
+            
+            ## Sammeln aller Datastream Codes aus SDC Datensatz
+            DscdsList <- c( SdcTable[[AcquirorDscds]][1:laenge], SdcTable[[TargetDscds]][1:laenge])
+            IccSampleRows <- is.element(IccTable[[IccDscdCol]],DscdsList)
+
+            IccTable <- IccTable[IccSampleRows,]
+            Tables <- TableStored$Get()    
+            Tables$ICCsample <- IccTable
+            TableStored$Set(Tables)
+        
+        ## Erstellung eines leeren Datensatze, in dem später die M&A Daten gespeichert werden
+        icc_period_data <- DataPropList$Get()$ICCPeriod
+        nobs <- ((icc_period_data$Far - icc_period_data$Close+1)-icc_period_data$Size+1)
+        maa_table <- as.data.frame(matrix(rep(NA,(7+6*nobs)*laenge),nrow=laenge,ncol=7+6*nobs))
+        
+        ## Aufruf von Funktion 3.2
+        Company_Prop_List_Set(TableStored, DataPropList) 
+        
+        ## das Rückgabeobjekt von Data_Retrieve() muss vor Verwendung bereits existieren
+        AccessData <<- Data_Retrieve ()
+        
+        
+            ## Start der tatsächlichen Datenentnahme und der Berechnung     
+            for (i_row in 1:laenge){ ## i_row für jede Zeile des SDC Datensatzes
+
+                AccessData$retrieveSdc(DataPropList, TableStored, i_row,AccessData) ## Anwendung von Sdc_Get()
+                AccessData$retrieveIcc(DataPropList, TableStored, AccessData, Sample=TRUE) ## Anwendung von Icc_Get()
+                AccessData$retrieveCompany(DataPropList, TableStored, AccessData) ## Anwendung von Company_Get()
+
+                ## Zuweisung der Werte zu der M&A Tabelle    
+                maa_table[i_row,] <- c(as.character(AccessData$Get()$SDC$Datum), AccessData$Get()$SDC$AcquirorDscd, AccessData$Get()$SDC$TargetDscd, 
+                    AccessData$Get()$SDC$ShareAc, AccessData$Get()$SDC$SicAc , AccessData$Get()$SDC$SicTa , NA,
+                    AccessData$Get()$ICC$TaIcc, AccessData$Get()$ICC$AcIccPrae, AccessData$Get()$ICC$AcIccPost,
+                    AccessData$Get()$COMPANY$TaMv, AccessData$Get()$COMPANY$AcMvPrae, AccessData$Get()$COMPANY$AcMvPost)	
+            }            
     
     
         ## Benennung der Spalten der finalen Tabelle
