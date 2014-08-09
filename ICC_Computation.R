@@ -967,15 +967,16 @@ Compute_MandA_Table2 <- function(DataPropList,TableStored){
             TableStored$Set(Tables)
         
         ## Erstellung eines leeren Datensatze, in dem später die M&A Daten gespeichert werden
-        icc_period_data <- DataPropList$Get()$ICCPeriod
-        nobs <- ((icc_period_data$Far - icc_period_data$Close+1)-icc_period_data$Size+1)
-        maa_table <- as.data.frame(matrix(rep(NA,(7+6*nobs)*laenge),nrow=laenge,ncol=7+6*nobs))
+        ##icc_period_data <- DataPropList$Get()$ICCPeriod
+        ##nobs <- ((icc_period_data$Far - icc_period_data$Close+1)-icc_period_data$Size+1)
+        nobs <- 2
+        maa_table <- as.data.frame(matrix(rep(NA,(8+6*nobs)*laenge),nrow=laenge,ncol=8+6*nobs))
         
         ## Aufruf von Funktion 3.2
         Company_Prop_List_Set(TableStored, DataPropList) 
         
         ## das Rückgabeobjekt von Data_Retrieve() muss vor Verwendung bereits existieren
-        AccessData <<- Data_Retrieve ()
+        AccessData <<- Data_Retrieve2 ()
         
         
             ## Start der tatsächlichen Datenentnahme und der Berechnung     
@@ -986,31 +987,34 @@ Compute_MandA_Table2 <- function(DataPropList,TableStored){
                 AccessData$retrieveCompany(DataPropList, TableStored, AccessData) ## Anwendung von Company_Get()
 
                 ## Zuweisung der Werte zu der M&A Tabelle    
-                maa_table[i_row,] <- c(as.character(AccessData$Get()$SDC$Datum), AccessData$Get()$SDC$AcquirorDscd, AccessData$Get()$SDC$TargetDscd, 
+                maa_table[i_row,] <- c(as.character(AccessData$Get()$SDC$DatEffective),as.character(AccessData$Get()$SDC$DatAnnounced), 
+                    AccessData$Get()$SDC$AcquirorDscd, AccessData$Get()$SDC$TargetDscd, 
                     AccessData$Get()$SDC$ShareAc, AccessData$Get()$SDC$SicAc , AccessData$Get()$SDC$SicTa , NA,
                     AccessData$Get()$ICC$TaIcc, AccessData$Get()$ICC$AcIccPrae, AccessData$Get()$ICC$AcIccPost,
                     AccessData$Get()$COMPANY$TaMv, AccessData$Get()$COMPANY$AcMvPrae, AccessData$Get()$COMPANY$AcMvPost)	
             }            
-    
+     DatEffective = DatEffective, DatAnnounced = DatAnnounced 
     
         ## Benennung der Spalten der finalen Tabelle
-        IccColNames <- c(paste("TaIcc",-(nobs:1),sep="_"),paste("AcIccPrae",-(nobs:1),sep="_"),
-                        paste("AcIccPost",(1:nobs),sep="_+"))
+        ##IccColNames <- c(paste("TaIcc",-(nobs:1),sep="_"),paste("AcIccPrae",-(nobs:1),sep="_"),
+        ##                paste("AcIccPost",(1:nobs),sep="_+"))
+          IccColNames <- c("IccTaDate","TaIcc","IccAcPraeDate","AcIccPrae","IccAcPostDate","AcIccPost")
 
-        MvColNames  <- c(paste("TaMv",-(nobs:1),sep="_"),paste("AcMvPrae",-(nobs:1),sep="_"),
-                        paste("AcMvPost",(1:nobs),sep="_"))
+        ##MvColNames  <- c(paste("TaMv",-(nobs:1),sep="_"),paste("AcMvPrae",-(nobs:1),sep="_"),
+        ##                paste("AcMvPost",(1:nobs),sep="_"))
+        MvColNames  <- c("MvTaDate","TaMv","MvAcPraeDate","AcMvPrae","MvAcPostDate","AcMvPost")
 
         names(maa_table)<-c("Date","Acquiror_Dscd","Target_Dscd","Perc_Shares_Acquired","Acquiror_Sic","Target_Sic",
                     "SicSep",IccColNames,MvColNames)
         
         ## Änderung der Datentypen der Tabelle auf numeric
         maa_table[,c("Perc_Shares_Acquired",IccColNames,MvColNames)]<-apply(maa_table[,c("Perc_Shares_Acquired",
-                    IccColNames,MvColNames)],2,as.numeric)
+                    "TaIcc","AcIccPrae","AcIccPost","TaMv","AcMvPrae","AcMvPost")],2,as.numeric)
         
         ## Zuweisung neuer Spalte, die angibt, an welcher Sic Ziffer sich die Targer und Acquiror Sic unterscheiden
         maa_table$SicSep <- Sic_Separation(maa_table)
-        maa_table <- Calc_Weighted_Icc_prae(maa_table=maa_table)
-        maa_table <- Calc_Icc_Diff (maa_table=maa_table)
+        ##maa_table <- Calc_Weighted_Icc_prae(maa_table=maa_table)
+        ##maa_table <- Calc_Icc_Diff (maa_table=maa_table)
         maa_table
         }
  
