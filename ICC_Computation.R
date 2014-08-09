@@ -241,7 +241,7 @@ Icc_Period_Set <- function(Close = 1, Far = 63, Size = 12,
         ##  Aufruf von Funktion Extend_Fun(), um gegebenenfalls CompanyData Datensatz um neue
         ##  Spalten für Monate zu erweitern, falls durch Definition des Zeitfensters Daten
         ##  für Zeitpunkte abgefragt werden sollten, für die keine Spalten vorhanden sind.
-        Extend_Fun(TableStored,ceiling(Far/12))
+        ##Extend_Fun(TableStored,ceiling(Far/12))
         
         IccPeriodData <- list(Close = Close, Far = Far, 
                         Size =  Size, MinObs = MinObs)
@@ -304,8 +304,8 @@ Data_Prop2 <- function(){
 		Get <- function()PropList
 
         ## Funktionen rufen vorherige Funktionen unter 2. auf
-		setSdc <- function(...) if (length(list(...))==0){PropList$SDC <<- Sdc_Set()}
-						else {PropList$SDC <<- Sdc_Set(...)}
+		setSdc <- function(...) if (length(list(...))==0){PropList$SDC <<- Sdc_Set2()}
+						else {PropList$SDC <<- Sdc_Set2(...)}
 		setIcc <- function(...) if (length(list(...))==0){PropList$ICC <<- Icc_Set()}
 						else {PropList$ICC <<- Icc_Set(...)}
 		setCompany <- function(...) if (length(list(...))==0){PropList$COMPANY <<- Company_Set()}
@@ -845,6 +845,19 @@ Data_Retrieve <- function(){
         list(retrieveSdc = retrieveSdc, retrieveIcc = retrieveIcc, retrieveCompany = retrieveCompany, 
             retrieveIccPeriod = retrieveIccPeriod, Get = Get)
         }
+        
+Data_Retrieve2 <- function(){
+
+        MaaData <- list(NULL)
+        retrieveSdc <- function(...){MaaData$SDC <<- Sdc_Get(...)}
+        retrieveIcc <- function(...){MaaData$ICC <<- Icc_Get(...)}
+        retrieveCompany <- function(...){MaaData$COMPANY <<- Company_Get(...)}
+        retrieveIccPeriod <- function(...){MaaData$ICCPeriod <<- Icc_Period_Get(...)}
+        Get <- function()MaaData
+        
+        list(retrieveSdc = retrieveSdc, retrieveIcc = retrieveIcc, retrieveCompany = retrieveCompany, 
+            retrieveIccPeriod = retrieveIccPeriod, Get = Get)
+        }        
 
         
 
