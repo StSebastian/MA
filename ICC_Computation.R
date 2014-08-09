@@ -509,6 +509,90 @@ Icc_Get <- function(DataPropList, TableStored, access_data = AccessData, Sample=
 		ICC	
 		}
 
+ICC_Get2<- function(DataPropList, TableStored, access_data = AccessData, Sample=FALSE){
+        ## Nach Aufruf von Spaltenbenennung und ICC Datensatz
+        ## werden zunächst prae ICCs für Target- und Acquiror-Unternehmen
+        ## sowie post ICCs für Acquiror-Unternehmen aus ICC Datensatz
+        ## entnommen und diese in dem data.frame ICC zwischengespeichert.
+        ## Danach werden durch rollapply die rollierenden Mittelwerte für alle
+        ## Berechnungsfenster im Zeitintervall berechnet.
+        
+        IccProp <- DataPropList$Get()$ICC	## Aufruf der Spaltenbenennung des ICC Datensatzes
+        
+        if(Sample){IccTable <- TableStored$Get()$ICCsample} #
+        else{IccTable <- TableStored$Get()$ICC}   
+        ##  Legt fest, ob gesamter ICC Datensatz durchsucht werden soll oder ein vorher erstellter
+        ##  reduzierter Datensatz, der alle notwendigen Daten enthält. Zur Einsparung von Rechenzeit. 
+        
+        SdcData <- access_data$Get()$SDC        ##  Aufruf der von SDC_get() entnommenen M&A Informationen
+        PeriodData <- access_data$Get()$ICCPeriod  ##  Aufruf der von Icc_Period_Get() erstellten Zeitfenster
+        
+        ## Zwischenspeicherung der ICC Spaltennamen
+        DatCol  <- IccProp$DatCol
+        DscdCol <- IccProp$DscdCol
+        IccCol  <- IccProp$IccCol
+        
+        ## Zwischenspeicherung der Zeitfenster Daten
+        DatPrae <- sort(PeriodData$DatPrae)
+        DatPost <- sort(PeriodData$DatPost)
+        MinObs  <- PeriodData$MinObs
+        Size    <- PeriodData$Size
+        
+        ## Aufruf des ICC Datensatzes
+        IccTable  <- IccTable[,c(DatCol,DscdCol,IccCol),with=F]             ##
+        
+        ## data.frame zur Speicherung der ICCs
+        ICC <- rep(NA,length(DatPrae))
+        
+        ## Am Ende soll ein Dataframe mit ICC Zeitreihen für das Target vor, den
+        ## Acquiror vor und nach M&A im ICC data.frame gespeichert werden.
+        ## Der data.frame "ICC" ist die leere Vorlage.
+        ICC <- data.frame("TaIcc" = ICC, "AcIccPrae" = ICC,"AcIccPost" = ICC)
+
+            temp  <- IccTable[[DscdCol]] == as.character(SdcData$TargetDscd) ############
+            ## Filterung der Target-Datastream Codeeinträge im ICC Datensatz
+            
+            tempTA  <- IccTable[temp, c(DatCol,IccCol),with=F]          
+            ## Neuzuweisung des ICC Datensatzes mit ausschließlich Informationen zum Target 
+            
+            tempDat <- is.element(tempTA[[DatCol]],DatPrae)
+            ## Suche nach Einträgen zum prae Zeitfenster im Target ICC Datensatz
+            
+            IccExist <- is.element(DatPrae,tempTA[[DatCol]][tempDat])       
+            ## Um zu verhindern, dass fehlende Werte (nicht NA, sondern gar 
+            ## kein Eintrag zu dem Datum) im Untersuchungszeitraum nicht
+            ## verschwinden, müssen auch deren Positionen ermittelt werden und 
+            ## beim Eintrag in die ICC Tabelle berücksichtigt werden
+            
+            ICC[IccExist,"TaIcc"] <- tempTA[tempDat, IccCol,with=F]         
+            ## Zuweisung der ICCs zum leeren data.frame "ICC"
+            
+            ## Analoge Berechnung für ICC des Acquirors
+            temp  <- IccTable[[DscdCol]] == SdcData$AcquirorDscd            
+            tempAC  <- IccTable[temp, c(DatCol,IccCol),with=F]              
+            tempDat <- is.element(tempAC[[DatCol]],DatPrae)                 
+            IccExist <- is.element(DatPrae,tempAC[[DatCol]][tempDat])       
+            ICC[IccExist,"AcIccPrae"] <- tempAC[tempDat, IccCol,with=F]        
+
+            tempDat <- is.element(tempAC[[DatCol]],DatPost)     
+            IccExist <- is.element(DatPost,tempAC[[DatCol]][tempDat])  
+            ICC[IccExist,"AcIccPost"] <- tempAC[tempDat, IccCol,with=F]     
+          
+            ## Im folgenden wird der data.frame "ICC" in ein Objekt vom Typ zoo umgewandelt.
+            ## Darin werden für jede Spalte (TaIcc, AcIccPrae, AcIccPost) rollierend Mittelwerte
+            ## bestimmt. Sollten pro Berechnungszeitraum weniger Beobachtungen vorhanden sein
+            ## als durch "MinObs" definiert, findet keine Berechnung statt, sondern es wird ein
+            ## NA zurückgegeben.
+		CalcMean<-function(x){
+			if((Size-sum(is.na(x))) >= MinObs){mean(x,na.rm=T)}
+			else NA}
+	
+		ICC <- zoo(ICC)
+		ICC <- rollapply(ICC,FUN = CalcMean,width = Size)
+		ICC	
+		}        
+        
+        
 ##4.4	Company_Get: Entnimmt für die Zeitfenster und Datastream Codes der M&A 
 #####   Partner die Marktwerte aus dem Datensatz mit Unternehmensdaten und 
 #####   berechnet innerhalb der beiden Zeitfenster (post/prae M&A) rollierend 
@@ -799,5 +883,31 @@ Calc_Icc_Diff <- function(maa_table = MaATable, weighted_icc_prae ="WeightedIccP
     DataPropList$setICC(IccCol="ICC_GLS")
     MaATable_GLS<-Compute_MandA_Table(DataPropList,TableStored)    
 
-    write.table(MaATable_MPEG,"MaATable_GLS.txt",sep=";",col.names=T,row.names=F)
+    write.table(MaATable_GLS,"MaATable_GLS.txt",sep=";",col.names=T,row.names=F)
+    
+    
+## RP_CT
+    DataPropList$setICC(IccCol="RP_CT")
+    MaATable_RP_CT<-Compute_MandA_Table(DataPropList,TableStored)    
+
+    write.table(MaATable_RP_CT,"MaATable_RP_CT.txt",sep=";",col.names=T,row.names=F)
+    
+## RP_OJ
+    DataPropList$setICC(IccCol="RP_OJ")
+    MaATable_RP_OJ<-Compute_MandA_Table(DataPropList,TableStored)    
+
+    write.table(MaATable_RP_OJ,"MaATable_RP_OJ.txt",sep=";",col.names=T,row.names=F)
+
+## RP_MPEG
+    DataPropList$setICC(IccCol="RP_MPEG")
+    MaATable_RP_MPEG<-Compute_MandA_Table(DataPropList,TableStored)    
+
+    write.table(MaATable_RP_MPEG,"MaATable_RP_MPEG.txt",sep=";",col.names=T,row.names=F)
+
+## RP_GLS  
+    DataPropList$setICC(IccCol="RP_GLS")
+    MaATable_RP_GLS<-Compute_MandA_Table(DataPropList,TableStored)    
+
+    write.table(MaATable_RP_GLS,"MaATable_RP_GLS.txt",sep=";",col.names=T,row.names=F)
+    
 
