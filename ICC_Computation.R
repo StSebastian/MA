@@ -368,6 +368,34 @@ Dataset_Adjust <- function(TableStored,DataPropList){
 		TableStored$Set(Tables)
 		}
 
+Dataset_Adjust <- function(TableStored,DataPropList){
+		
+		SdcTable <- TableStored$Get()$SDC
+        IccTable <- TableStored$Get()$ICC
+		ColNamesSdc <- c("SpDate","SpValueTrans","SpTaName","SpTaDscd","SpAcName",
+		"SpAcDscd","SpAcSic","SpAcInd","SpTaSic","SpTaInd","SpDateAnn",
+		"SpEqV","SpEpV","SpShAfterTra","SpShAcq")
+        setnames(SdcTable,names(SdcTable),ColNamesSdc )
+
+        
+        SdcTable[,SpValueTrans:=as.numeric(SpValueTrans)]
+		SdcTable[,SpEqV:=as.numeric(SpEqV)]        
+		SdcTable[,SpEpV:=as.numeric(SpEpV)]
+
+        SdcTable[,SpDate:= as.Date(strptime(SpDate,"%m.%d.%Y"))]
+		SdcTable[,SpDateAnn:= as.Date(strptime(SpDateAnn,"%m.%d.%Y"))]
+		SdcTable[,SpShAfterTra:= SpShAfterTra/100]
+		SdcTable[,SpShAcq:= SpShAcq/100]
+        
+        IccDatCol <- DataPropList$Get()$ICC$DatCol
+        IccTable[,{IccDatCol}:=substr(as.Date(strptime(IccTable[[IccDatCol]],"%Y-%m-%d")),1,7)]     
+		
+        ## Überschreibung alter Datensätze
+        Tables <- TableStored$Get()
+		Tables$SDC <- SdcTable
+		TableStored$Set(Tables)
+		}        
+        
 ##  Aufruf von Dataset_Adjust()        
     Dataset_Adjust(TableStored,DataPropList)          
         
