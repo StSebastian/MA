@@ -520,7 +520,10 @@ Icc_Period_Get2 <- function(DateAnnounced,DateEffective){
         ##DatPost <- DatPrae <- rep(Datum,icc_period_data$Far - icc_period_data$Close+1)
         IccPraeDat$mday<-IccPraeDat$mday-7     
         IccPostDat$year <- IccPostDat$year+1 
-        IccPostDat$mon <- 3     
+        IccPostDat$mon <- 3   
+        
+        IccPraeDat <- substring(IccPraeDat,1,7)
+        IccPostDat <- substring(IccPostDat,1,7)    
         MinObs <- print("hier")
         Size  <- print("hier")  
         ##DatPrae$mon <- DatPrae$mon-(icc_period_data$Far:icc_period_data$Close)    ##  Zuweisung des prae Zeitintervalls
