@@ -421,22 +421,29 @@ Icc_Period_Get <- function(Datum){
         list(DatPrae = DatPrae, DatPost = DatPost, MinObs = MinObs, Size = Size)
         }
 
-Icc_Period_Get2 <- function(Datum){
+##Icc_Period_Get <- function(Datum){
+Icc_Period_Get2 <- function(DateAnnounced,DateEffective){
 	
         icc_period_data <- DataPropList$Get()$ICCPeriod ## Aufruf der zuvor definierten Parameter für Zeifenster
         
-        Datum <- as.POSIXlt(Datum) 
-        Datum$mday <- 15
-        DatPost <- DatPrae <- rep(Datum,icc_period_data$Far - icc_period_data$Close+1)
-                 
-        DatPrae$mon <- DatPrae$mon-(icc_period_data$Far:icc_period_data$Close)    ##  Zuweisung des prae Zeitintervalls
-        DatPost$mon <- DatPost$mon+(icc_period_data$Close:icc_period_data$Far)    ##  Zuweisung des post Zeitintervalls
-        DatPrae <- substr(as.Date(DatPrae),1,7) ##  Entfernung der Wochentage (für Auswertung sind nur Monate von Bedeutung)
-        DatPost <- substr(as.Date(DatPost),1,7) ##  Entfernung der Wochentage (für Auswertung sind nur Monate von Bedeutung)
-        MinObs <- icc_period_data$MinObs
-        Size <- icc_period_data$Size	## Größe der rollierenden Berechnungsfenster
+        IccPraeDat<-as.POSIXlt(DateAnnounced)
+        IccPostDat<-as.POSIXlt(DateEffective)
+        ##Datum <- as.POSIXlt(Datum) 
+        ##Datum$mday <- 15
+        ##DatPost <- DatPrae <- rep(Datum,icc_period_data$Far - icc_period_data$Close+1)
+        IccPraeDat$mday<-IccPraeDat$mday-7     
+        IccPostDat$year <- IccPostDat$year+1 
+        IccPostDat$mon <- 3     
+        MinObs <- print("hier")
+        Size  <- print("hier")  
+        ##DatPrae$mon <- DatPrae$mon-(icc_period_data$Far:icc_period_data$Close)    ##  Zuweisung des prae Zeitintervalls
+        ##DatPost$mon <- DatPost$mon+(icc_period_data$Close:icc_period_data$Far)    ##  Zuweisung des post Zeitintervalls
+        ##DatPrae <- substr(as.Date(DatPrae),1,7) ##  Entfernung der Wochentage (für Auswertung sind nur Monate von Bedeutung)
+        ##DatPost <- substr(as.Date(DatPost),1,7) ##  Entfernung der Wochentage (für Auswertung sind nur Monate von Bedeutung)
+        ##MinObs <- icc_period_data$MinObs
+        ##Size <- icc_period_data$Size	## Größe der rollierenden Berechnungsfenster
 
-        list(DatPrae = DatPrae, DatPost = DatPost, MinObs = MinObs, Size = Size)
+        list(DatPrae = IccPraeDat, DatPost = IccPostDat, MinObs = MinObs, Size = Size)
         }        
 
 
