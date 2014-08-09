@@ -657,6 +657,54 @@ Company_Get <- function(DataPropList, TableStored, access_data = AccessData){
 		Mv
 		}
 
+Company_Get2 <- function(DataPropList, TableStored, access_data = AccessData){
+	## Im Prinzip zu ICC_Get() analoge Bestimmung von Marktwerten
+		
+        CompProp <- DataPropList$Get()$COMPANY
+		CompanyTable <- TableStored$Get()$COMPANY		
+		SdcData <-  access_data$Get()$SDC	
+        PeriodData <- access_data$Get()$ICCPeriod
+    
+		CharacCol <- CompProp$CharacList
+		CharacCol <- CharacCol$MV
+		DscdCol <- CompProp$DscdCol
+		DatPrae <- sort(PeriodData$DatPrae)
+		DatPost <- sort(PeriodData$DatPost)
+		MinObs  <- PeriodData$MinObs
+		Size 	<- PeriodData$Size
+        
+        ## Die Entnahme und Berechnung der MV-Mittelwerte sind ähnlich der der ICC.
+        ## Es entfällt aber die Prüfung auf nicht eingetragene Daten, weil im
+        ## CompanyData Datensatz jedes Datum mit mindestens einem NA-Wert enthalten
+        ## ist. Außerdem sind die Daten selbst Spaltennamen und können ohne Überprüfung
+        ## mit "is.element" direkt ausgewählt werden.
+		CompanyTablePrae <- CompanyTable[CharacCol ,c(DscdCol, DatPrae),with=F]
+		CompanyTablePost <- CompanyTable[CharacCol ,c(DscdCol, DatPost),with=F]
+		
+		Mv <- rep(NA,length(DatPrae))
+		Mv <- data.frame("TaMv" = Mv, "AcMvPrae" = Mv,"AcMvPost" = Mv)
+
+		temp <- CompanyTablePrae[[DscdCol]] == SdcData$TargetDscd               
+        Mv$TaMv <- as.numeric(CompanyTablePrae[,DatPrae,with=F][temp])	            
+		## hier direkte Auswahl der Daten über Spaltennamen ohne is.element oder
+        ## Überprüfung auf nicht verzeichnete Daten
+        
+		temp <- CompanyTablePrae[[DscdCol]] == SdcData$AcquirorDscd             
+		Mv$AcMvPrae <- as.numeric(CompanyTablePrae[,DatPrae,with=F][temp])	        
+
+        Mv$AcMvPost <- as.numeric(CompanyTablePost[,DatPost,with=F][temp])           
+		
+        
+        ## Berechnung rollierender Mittelwerte analog zu ICC_Get()
+		CalcMean<-function(x){
+			if((Size-sum(is.na(x))) >= MinObs){mean(x,na.rm=T)}
+			else NA}
+	
+		Mv <- zoo(Mv)
+		Mv <- rollapply(Mv,FUN = CalcMean,width = Size)
+		Mv
+		}        
+
 
 ##4.5	Data_Retrieve(): Auf Sdc_Get(), Icc_Get() und Company_Get() wird
 #####   nicht direkt zugegriffen, sondern durch Data_Retrieve() wird eine
