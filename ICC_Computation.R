@@ -186,13 +186,14 @@ Sdc_Set <- function(DatCol = "SpDate", AcCol = "SpAcDscd", TaCol = "SpTaDscd",
                         "SicAcCol" = SicAcCol, "SicTaCol" = SicTaCol)
         }
         
-Sdc_Set2 <- function(DatCol = "SpDate", AcCol = "SpAcDscd", TaCol = "SpTaDscd",
+Sdc_Set2 <- function(DatEffCol = "SpDate",DatAnnCol ="", AcCol = "SpAcDscd", TaCol = "SpTaDscd",
                             ShareCol = "SpShAcq", SicAcCol = "SpAcSic", 
                         SicTaCol = "SpTaSic"){    
         
-        SDCCol <- list("DatCol" = DatCol, "AcCol" = AcCol, "TaCol" = TaCol, "ShareCol" = ShareCol,
-                        "SicAcCol" = SicAcCol, "SicTaCol" = SicTaCol)
-        }        
+        SDCCol <- list("DatEffCol" = DatEffCol, "DatAnnCol" = DatAnnCol, "AcCol" = AcCol, "TaCol" = TaCol, 
+                       "ShareCol" = ShareCol, "SicAcCol" = SicAcCol, "SicTaCol" = SicTaCol)
+        }    
+        
 
 ##2.2	Icc_Set(): Funktion, die Spaltennamen für ICC-Tabelle zentral 
 #####   speichert. Die Funktion wird später nicht direkt aufgerufen, 
@@ -218,6 +219,7 @@ Company_Set <- function(DscdCol = "DSCD", CharacCol = "Properties",
             "SicCol" = SicCol, "CharacList" = CharacList)}
             COMPCol 
         }
+
 
 ##2.4	Icc_Period_Set(): Funktion, durch die prae und post Zeitintervall um den 
 #####   M&A definiert werden und für deren Zeiträume die ICCs entnommen werden. 
@@ -295,6 +297,35 @@ Data_Prop <- function(){
 		DataPropList <<- list(Get = Get, setSdc = setSdc, setICC = setIcc, setCompany = setCompany,
 					setIccPeriod = setIccPeriod, setDefault = setDefault)	
 		}
+
+Data_Prop2 <- function(){
+
+		PropList <- list(NULL)
+		Get <- function()PropList
+
+        ## Funktionen rufen vorherige Funktionen unter 2. auf
+		setSdc <- function(...) if (length(list(...))==0){PropList$SDC <<- Sdc_Set()}
+						else {PropList$SDC <<- Sdc_Set(...)}
+		setIcc <- function(...) if (length(list(...))==0){PropList$ICC <<- Icc_Set()}
+						else {PropList$ICC <<- Icc_Set(...)}
+		setCompany <- function(...) if (length(list(...))==0){PropList$COMPANY <<- Company_Set()}
+						else {PropList$COMPANY <<- Company_Set(...)}
+        setCharacList <- function(CompanyProp){PropList$COMPANY <<- CompanyProp}                
+		setIccPeriod <- function(...) if (length(list(...))==0){PropList$ICCPeriod <<- Icc_Period_Set()}
+						else {PropList$ICCPeriod <<- Icc_Period_Set(...)}
+        
+        ## Funktion zum Setzen von Standardwerten
+        setDefault <- function(){
+                        PropList$SDC <<- Sdc_Set()
+                        PropList$ICC <<- Icc_Set()
+                        PropList$COMPANY <<- Company_Set()
+                        PropList$ICCPeriod <<- Icc_Period_Set()
+                        }
+    
+        ## Erstellt Liste
+		DataPropList <<- list(Get = Get, setSdc = setSdc, setICC = setIcc, setCompany = setCompany,
+					setIccPeriod = setIccPeriod, setDefault = setDefault)	
+		}        
 
 ##  Aufruf von Data_Prop() ->  Liste DataPropList wird erstellt ohne Zuweisung        
     Data_Prop()
