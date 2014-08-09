@@ -185,6 +185,14 @@ Sdc_Set <- function(DatCol = "SpDate", AcCol = "SpAcDscd", TaCol = "SpTaDscd",
         SDCCol <- list("DatCol" = DatCol, "AcCol" = AcCol, "TaCol" = TaCol, "ShareCol" = ShareCol,
                         "SicAcCol" = SicAcCol, "SicTaCol" = SicTaCol)
         }
+        
+Sdc_Set2 <- function(DatCol = "SpDate", AcCol = "SpAcDscd", TaCol = "SpTaDscd",
+                            ShareCol = "SpShAcq", SicAcCol = "SpAcSic", 
+                        SicTaCol = "SpTaSic"){    
+        
+        SDCCol <- list("DatCol" = DatCol, "AcCol" = AcCol, "TaCol" = TaCol, "ShareCol" = ShareCol,
+                        "SicAcCol" = SicAcCol, "SicTaCol" = SicTaCol)
+        }        
 
 ##2.2	Icc_Set(): Funktion, die Spaltennamen für ICC-Tabelle zentral 
 #####   speichert. Die Funktion wird später nicht direkt aufgerufen, 
@@ -418,15 +426,20 @@ Sdc_Get2 <- function(DataPropList, TableStored, SDCRow,access_data = AccessData)
         SdcTable <- TableStored$Get()$SDC   ## Aufruf des SDC Datensatze
         
         ## Zwischenspeicherung der SDC Spaltennamen
-        DatCol 	<- SdcProp$DatCol	
+        ##DatCol 	<- SdcProp$DatCol
+        DatEffectiveCol <- SdcProp$DatEffCol    
+        DatAnnouncedCol <- SdcProp$DatAnnCol
         AcquirorCol <- SdcProp$AcCol
         TargetCol   <- SdcProp$TaCol
         ShareAcCol  <- SdcProp$ShareCol
         SicAcqCol	<- SdcProp$SicAcCol
         SicTarCol   <- SdcProp$SicTaCol
         
-        Datum     <- SdcTable[[DatCol]][SDCRow]
-        access_data$retrieveIccPeriod(Datum) 
+        ##Datum     <- SdcTable[[DatCol]][SDCRow]
+        DatEffective  <- SdcTable[[DatEffectiveCol]][SDCRow]
+        DatAnnounced  <- SdcTable[[DatAnnouncedCol]][SDCRow]
+        ##access_data$retrieveIccPeriod(Datum) 
+        access_data$retrieveIccPeriod(DateAnnounced = DatAnnounced, DateEffective = DatEffective) 
         ## access_data: wird später erklärt. Hier wird eine Funktion aufgerufen,
         ##              die für das M&A Datum die post/prae Zeitintervalle berechnet 
         ##              und speichert.    
@@ -440,9 +453,8 @@ Sdc_Get2 <- function(DataPropList, TableStored, SDCRow,access_data = AccessData)
         SicTa		 <- SdcTable[[SicTarCol]][SDCRow] 	    
         
         ## Rückgabe der M&A Informationen
-        list( Datum = Datum, AcquirorDscd = AcquirorDscd, 
-            TargetDscd = TargetDscd, ShareAc = ShareAc, 
-            SicAc = SicAc, SicTa = SicTa)
+        list( DatEffective = DatEffective, DatAnnounced = DatAnnounced , AcquirorDscd = AcquirorDscd, 
+            TargetDscd = TargetDscd, ShareAc = ShareAc, SicAc = SicAc, SicTa = SicTa)
         }        
 
 ##4.2	Icc_Period_Get(): Berechnet für ein übergebenes Datum die post und prae
