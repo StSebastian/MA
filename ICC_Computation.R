@@ -421,6 +421,24 @@ Icc_Period_Get <- function(Datum){
         list(DatPrae = DatPrae, DatPost = DatPost, MinObs = MinObs, Size = Size)
         }
 
+Icc_Period_Get2 <- function(Datum){
+	
+        icc_period_data <- DataPropList$Get()$ICCPeriod ## Aufruf der zuvor definierten Parameter für Zeifenster
+        
+        Datum <- as.POSIXlt(Datum) 
+        Datum$mday <- 15
+        DatPost <- DatPrae <- rep(Datum,icc_period_data$Far - icc_period_data$Close+1)
+                 
+        DatPrae$mon <- DatPrae$mon-(icc_period_data$Far:icc_period_data$Close)    ##  Zuweisung des prae Zeitintervalls
+        DatPost$mon <- DatPost$mon+(icc_period_data$Close:icc_period_data$Far)    ##  Zuweisung des post Zeitintervalls
+        DatPrae <- substr(as.Date(DatPrae),1,7) ##  Entfernung der Wochentage (für Auswertung sind nur Monate von Bedeutung)
+        DatPost <- substr(as.Date(DatPost),1,7) ##  Entfernung der Wochentage (für Auswertung sind nur Monate von Bedeutung)
+        MinObs <- icc_period_data$MinObs
+        Size <- icc_period_data$Size	## Größe der rollierenden Berechnungsfenster
+
+        list(DatPrae = DatPrae, DatPost = DatPost, MinObs = MinObs, Size = Size)
+        }        
+
 
 ##4.3	Icc_Get(): entnimmt für die Zeitfenster und Datastream Codes der M&A Partner 
 #####   die ICC-Werte aus dem ICC Datensatz und berechnet innerhalb der beiden Zeitintervalle
@@ -526,6 +544,8 @@ ICC_Get2<- function(DataPropList, TableStored, access_data = AccessData, Sample=
         
         SdcData <- access_data$Get()$SDC        ##  Aufruf der von SDC_get() entnommenen M&A Informationen
         PeriodData <- access_data$Get()$ICCPeriod  ##  Aufruf der von Icc_Period_Get() erstellten Zeitfenster
+        DatPrae <- PeriodData$DatPrae
+        DatPost <- PeriodData$DatPost
         
         ## Zwischenspeicherung der ICC Spaltennamen
         DatCol  <- IccProp$DatCol
@@ -620,10 +640,12 @@ Company_Get <- function(DataPropList, TableStored, access_data = AccessData){
 		CharacCol <- CompProp$CharacList
 		CharacCol <- CharacCol$MV
 		DscdCol <- CompProp$DscdCol
-		DatPrae <- sort(PeriodData$DatPrae)
-		DatPost <- sort(PeriodData$DatPost)
-		MinObs  <- PeriodData$MinObs
-		Size 	<- PeriodData$Size
+        DatPrae <- PeriodData$DatPrae
+		DatPost <- PeriodData$DatPost
+		##DatPrae <- sort(PeriodData$DatPrae)
+		##DatPost <- sort(PeriodData$DatPost)
+		##MinObs  <- PeriodData$MinObs
+		##Size 	<- PeriodData$Size
         
         ## Die Entnahme und Berechnung der MV-Mittelwerte sind ähnlich der der ICC.
         ## Es entfällt aber die Prüfung auf nicht eingetragene Daten, weil im
@@ -633,27 +655,33 @@ Company_Get <- function(DataPropList, TableStored, access_data = AccessData){
 		CompanyTablePrae <- CompanyTable[CharacCol ,c(DscdCol, DatPrae),with=F]
 		CompanyTablePost <- CompanyTable[CharacCol ,c(DscdCol, DatPost),with=F]
 		
-		Mv <- rep(NA,length(DatPrae))
+		##Mv <- rep(NA,length(DatPrae))
+        Mv <- rep(NA,2)
 		Mv <- data.frame("TaMv" = Mv, "AcMvPrae" = Mv,"AcMvPost" = Mv)
 
 		temp <- CompanyTablePrae[[DscdCol]] == SdcData$TargetDscd               
-        Mv$TaMv <- as.numeric(CompanyTablePrae[,DatPrae,with=F][temp])	            
+        ##Mv$TaMv <- as.numeric(CompanyTablePrae[,DatPrae,with=F][temp])
+        Mv[1,"TaMv"] <- DatPrae	
+        Mv[2,"TaMv"] <- as.numeric(CompanyTablePrae[,DatPrae,with=F][temp])	    
 		## hier direkte Auswahl der Daten über Spaltennamen ohne is.element oder
         ## Überprüfung auf nicht verzeichnete Daten
         
 		temp <- CompanyTablePrae[[DscdCol]] == SdcData$AcquirorDscd             
-		Mv$AcMvPrae <- as.numeric(CompanyTablePrae[,DatPrae,with=F][temp])	        
+		##Mv$AcMvPrae <- as.numeric(CompanyTablePrae[,DatPrae,with=F][temp])	  
+        Mv[1,"AcMvPrae"] <- DatPrae
+        Mv[2,"AcMvPrae"] <- as.numeric(CompanyTablePrae[,DatPrae,with=F][temp])    
 
-        Mv$AcMvPost <- as.numeric(CompanyTablePost[,DatPost,with=F][temp])           
-		
+        ##Mv$AcMvPost <- as.numeric(CompanyTablePost[,DatPost,with=F][temp])           
+		Mv[1,"AcMvPost"] <- DatPost
+        Mv[2,"AcMvPost"] <- as.numeric(CompanyTablePost[,DatPost,with=F][temp]) 
         
         ## Berechnung rollierender Mittelwerte analog zu ICC_Get()
-		CalcMean<-function(x){
-			if((Size-sum(is.na(x))) >= MinObs){mean(x,na.rm=T)}
-			else NA}
+		##CalcMean<-function(x){
+		##	if((Size-sum(is.na(x))) >= MinObs){mean(x,na.rm=T)}
+		##	else NA}
 	
-		Mv <- zoo(Mv)
-		Mv <- rollapply(Mv,FUN = CalcMean,width = Size)
+		##Mv <- zoo(Mv)
+		##Mv <- rollapply(Mv,FUN = CalcMean,width = Size)
 		Mv
 		}
 
