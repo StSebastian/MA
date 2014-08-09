@@ -400,6 +400,50 @@ Sdc_Get <- function(DataPropList, TableStored, SDCRow,access_data = AccessData){
             TargetDscd = TargetDscd, ShareAc = ShareAc, 
             SicAc = SicAc, SicTa = SicTa)
         }
+        
+Sdc_Get2 <- function(DataPropList, TableStored, SDCRow,access_data = AccessData){
+        ##  Zunächst werden die Spaltennamen des SDC Datensatzes aus DataPropList
+        ##  zwischengespeichert, ebenso wie der SDC Datensatz.
+        ##  Dann wird durch den Funktionsaufruf access_data$retrieveIccPeriod
+        ##  die Berechnung der prae und post Zeitintervalle ausgelöst,
+        ##  zum Funktionsende die M&A Daten eingeholt und in einer Liste
+        ##  zurückgegeben.
+        
+        ##  SDCRow: Welche Zeile im SDC Datensatz ausgewertet wird
+        ##          im Prinzip der M&A, der ausgewertet wird.
+        ##  AccessData: Liste, in der Funktionen zur Datenauswertung zusammen-
+        ##              gefasst sind - wird später genauer erläutert.   
+        
+        SdcProp  <- DataPropList$Get()$SDC   ## Aufruf der Spaltenbenennung des SDC Datensatzes
+        SdcTable <- TableStored$Get()$SDC   ## Aufruf des SDC Datensatze
+        
+        ## Zwischenspeicherung der SDC Spaltennamen
+        DatCol 	<- SdcProp$DatCol	
+        AcquirorCol <- SdcProp$AcCol
+        TargetCol   <- SdcProp$TaCol
+        ShareAcCol  <- SdcProp$ShareCol
+        SicAcqCol	<- SdcProp$SicAcCol
+        SicTarCol   <- SdcProp$SicTaCol
+        
+        Datum     <- SdcTable[[DatCol]][SDCRow]
+        access_data$retrieveIccPeriod(Datum) 
+        ## access_data: wird später erklärt. Hier wird eine Funktion aufgerufen,
+        ##              die für das M&A Datum die post/prae Zeitintervalle berechnet 
+        ##              und speichert.    
+        
+        
+        ## Entnahme der M&A Informationen
+        AcquirorDscd <- SdcTable[[AcquirorCol]][SDCRow]   
+        TargetDscd   <- SdcTable[[TargetCol]][SDCRow]     
+        ShareAc      <- SdcTable[[ShareAcCol]][SDCRow]      
+        SicAc		 <- SdcTable[[SicAcqCol]][SDCRow]     
+        SicTa		 <- SdcTable[[SicTarCol]][SDCRow] 	    
+        
+        ## Rückgabe der M&A Informationen
+        list( Datum = Datum, AcquirorDscd = AcquirorDscd, 
+            TargetDscd = TargetDscd, ShareAc = ShareAc, 
+            SicAc = SicAc, SicTa = SicTa)
+        }        
 
 ##4.2	Icc_Period_Get(): Berechnet für ein übergebenes Datum die post und prae
 #####   M&A Zeitintervalle
