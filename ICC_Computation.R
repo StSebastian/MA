@@ -186,7 +186,7 @@ Sdc_Set <- function(DatCol = "SpDate", AcCol = "SpAcDscd", TaCol = "SpTaDscd",
                         "SicAcCol" = SicAcCol, "SicTaCol" = SicTaCol)
         }
         
-Sdc_Set2 <- function(DatEffCol = "SpDate",DatAnnCol ="", AcCol = "SpAcDscd", TaCol = "SpTaDscd",
+Sdc_Set2 <- function(DatEffCol = "SpDateEff",DatAnnCol ="SpDateAnn", AcCol = "SpAcDscd", TaCol = "SpTaDscd",
                             ShareCol = "SpShAcq", SicAcCol = "SpAcSic", 
                         SicTaCol = "SpTaSic"){    
         
@@ -241,7 +241,7 @@ Icc_Period_Set <- function(Close = 1, Far = 63, Size = 12,
         ##  Aufruf von Funktion Extend_Fun(), um gegebenenfalls CompanyData Datensatz um neue
         ##  Spalten für Monate zu erweitern, falls durch Definition des Zeitfensters Daten
         ##  für Zeitpunkte abgefragt werden sollten, für die keine Spalten vorhanden sind.
-        ##Extend_Fun(TableStored,ceiling(Far/12))
+        Extend_Fun(TableStored,ceiling(Far/12))
         
         IccPeriodData <- list(Close = Close, Far = Far, 
                         Size =  Size, MinObs = MinObs)
@@ -252,7 +252,7 @@ Icc_Period_Set <- function(Close = 1, Far = 63, Size = 12,
 #####   im CompanyData Datensatz enthalten ist, schlägt die Abfrage fehl. Extend_Fun 
 #####   fügt daher weitere Spalten mit NA-Werten für in der Zukunft liegende Zeitpunkte 
 #####   an den CompanyData Datensatz an.  
-Extend_Fun <- function(TableStored = TableStored, years = 6){
+Extend_Fun <- function(TableStored , years = 6){
 		CompanyTable <- TableStored$Get()$COMPANY
 		monthAdd<-12*(years+1)
 		time <- as.Date("2014-01-01")
@@ -316,7 +316,7 @@ Data_Prop2 <- function(){
         
         ## Funktion zum Setzen von Standardwerten
         setDefault <- function(){
-                        PropList$SDC <<- Sdc_Set()
+                        PropList$SDC <<- Sdc_Set2()
                         PropList$ICC <<- Icc_Set()
                         PropList$COMPANY <<- Company_Set()
                         PropList$ICCPeriod <<- Icc_Period_Set()
@@ -328,8 +328,8 @@ Data_Prop2 <- function(){
 		}        
 
 ##  Aufruf von Data_Prop() ->  Liste DataPropList wird erstellt ohne Zuweisung        
-    Data_Prop()
-
+##    Data_Prop()
+Data_Prop2()
 ##  Setzen von Standardwerten für DataPropList     
     DataPropList$setDefault()
 
@@ -368,11 +368,11 @@ Dataset_Adjust <- function(TableStored,DataPropList){
 		TableStored$Set(Tables)
 		}
 
-Dataset_Adjust <- function(TableStored,DataPropList){
+Dataset_Adjust2 <- function(TableStored,DataPropList){
 		
 		SdcTable <- TableStored$Get()$SDC
         IccTable <- TableStored$Get()$ICC
-		ColNamesSdc <- c("SpDate","SpValueTrans","SpTaName","SpTaDscd","SpAcName",
+		ColNamesSdc <- c("SpDateEff","SpValueTrans","SpTaName","SpTaDscd","SpAcName",
 		"SpAcDscd","SpAcSic","SpAcInd","SpTaSic","SpTaInd","SpDateAnn",
 		"SpEqV","SpEpV","SpShAfterTra","SpShAcq")
         setnames(SdcTable,names(SdcTable),ColNamesSdc )
@@ -382,7 +382,7 @@ Dataset_Adjust <- function(TableStored,DataPropList){
 		SdcTable[,SpEqV:=as.numeric(SpEqV)]        
 		SdcTable[,SpEpV:=as.numeric(SpEpV)]
 
-        SdcTable[,SpDate:= as.Date(strptime(SpDate,"%m.%d.%Y"))]
+        SdcTable[,SpDateEff:= as.Date(strptime(SpDateEff,"%m.%d.%Y"))]
 		SdcTable[,SpDateAnn:= as.Date(strptime(SpDateAnn,"%m.%d.%Y"))]
 		SdcTable[,SpShAfterTra:= SpShAfterTra/100]
 		SdcTable[,SpShAcq:= SpShAcq/100]
@@ -397,7 +397,8 @@ Dataset_Adjust <- function(TableStored,DataPropList){
 		}        
         
 ##  Aufruf von Dataset_Adjust()        
-    Dataset_Adjust(TableStored,DataPropList)          
+##    Dataset_Adjust(TableStored,DataPropList)     
+Dataset_Adjust2(TableStored,DataPropList)          
         
 ##3.2   Company_Prop_List_Set(): Untersucht, an welchen Positionen im 
 #####   Datensatz für Unternehmensdaten welche Unternehmensdaten MV, Sales etc.
@@ -552,8 +553,8 @@ Icc_Period_Get2 <- function(DateAnnounced,DateEffective){
         
         IccPraeDat <- substring(IccPraeDat,1,7)
         IccPostDat <- substring(IccPostDat,1,7)    
-        MinObs <- print("hier")
-        Size  <- print("hier")  
+        MinObs <-"hier"
+        Size  <- "hier"
         ##DatPrae$mon <- DatPrae$mon-(icc_period_data$Far:icc_period_data$Close)    ##  Zuweisung des prae Zeitintervalls
         ##DatPost$mon <- DatPost$mon+(icc_period_data$Close:icc_period_data$Far)    ##  Zuweisung des post Zeitintervalls
         ##DatPrae <- substr(as.Date(DatPrae),1,7) ##  Entfernung der Wochentage (für Auswertung sind nur Monate von Bedeutung)
@@ -652,7 +653,7 @@ Icc_Get <- function(DataPropList, TableStored, access_data = AccessData, Sample=
 		ICC	
 		}
 
-ICC_Get2<- function(DataPropList, TableStored, access_data = AccessData, Sample=FALSE){
+Icc_Get2<- function(DataPropList, TableStored, access_data = AccessData, Sample=FALSE){
         ## Nach Aufruf von Spaltenbenennung und ICC Datensatz
         ## werden zunächst prae ICCs für Target- und Acquiror-Unternehmen
         ## sowie post ICCs für Acquiror-Unternehmen aus ICC Datensatz
@@ -704,15 +705,17 @@ ICC_Get2<- function(DataPropList, TableStored, access_data = AccessData, Sample=
             ##tempDat <- is.element(tempTA[[DatCol]],DatPrae)
             tempDat <- tempTA[[DatCol]]==DatPrae
             ## Suche nach Einträgen zum prae Zeitfenster im Target ICC Datensatz
-            
+           
             ##IccExist <- is.element(DatPrae,tempTA[[DatCol]][tempDat])       
             ## Um zu verhindern, dass fehlende Werte (nicht NA, sondern gar 
             ## kein Eintrag zu dem Datum) im Untersuchungszeitraum nicht
             ## verschwinden, müssen auch deren Positionen ermittelt werden und 
             ## beim Eintrag in die ICC Tabelle berücksichtigt werden
-            
-            ICC[1,"TaIcc"] <- tempTA[tempDat, DatCol,with=F]
-            ICC[2,"TaIcc"] <- tempTA[tempDat, IccCol,with=F]
+            if(length(tempDat)==0|sum(tempDat)==0){ICC[1:2,"TaIcc"] <-NA}
+            else{        
+                ICC[1,"TaIcc"] <- tempTA[tempDat, DatCol,with=F]
+                ICC[2,"TaIcc"] <- tempTA[tempDat, IccCol,with=F]
+                }
             ##ICC[IccExist,"TaIcc"] <- tempTA[tempDat, IccCol,with=F]         
             ## Zuweisung der ICCs zum leeren data.frame "ICC"
             
@@ -723,16 +726,21 @@ ICC_Get2<- function(DataPropList, TableStored, access_data = AccessData, Sample=
             ##IccExist <- is.element(DatPrae,tempAC[[DatCol]][tempDat])
             tempDat <- tempAC[[DatCol]]==DatPrae
             ##ICC[IccExist,"AcIccPrae"] <- tempAC[tempDat, IccCol,with=F]        
-            ICC[1,"AcIccPrae"] <- tempAC[tempDat, DatCol,with=F]
-            ICC[2,"AcIccPrae"] <- tempAC[tempDat, IccCol,with=F]
             
+            if(length(tempDat)==0|sum(tempDat)==0){ICC[1:2,"AcIccPrae"] <-NA}
+            else{    
+                ICC[1,"AcIccPrae"] <- tempAC[tempDat, DatCol,with=F]
+                ICC[2,"AcIccPrae"] <- tempAC[tempDat, IccCol,with=F]
+                }
             ##tempDat <- is.element(tempAC[[DatCol]],DatPost)     
             ##IccExist <- is.element(DatPost,tempAC[[DatCol]][tempDat])  
             tempDat <- is.element(tempAC[[DatCol]],DatPost)  
             ##ICC[IccExist,"AcIccPost"] <- tempAC[tempDat, IccCol,with=F]
-            ICC[1,"AcIccPost"] <- tempAC[tempDat, DatCol,with=F]
-            ICC[2,"AcIccPost"] <- tempAC[tempDat, IccCol,with=F]            
-          
+            if(length(tempDat)==0|sum(tempDat)==0){ICC[1:2,"AcIccPost"] <-NA}
+            else{ 
+                ICC[1,"AcIccPost"] <- tempAC[tempDat, DatCol,with=F]
+                ICC[2,"AcIccPost"] <- tempAC[tempDat, IccCol,with=F]            
+                }
             ## Im folgenden wird der data.frame "ICC" in ein Objekt vom Typ zoo umgewandelt.
             ## Darin werden für jede Spalte (TaIcc, AcIccPrae, AcIccPost) rollierend Mittelwerte
             ## bestimmt. Sollten pro Berechnungszeitraum weniger Beobachtungen vorhanden sein
@@ -754,7 +762,7 @@ ICC_Get2<- function(DataPropList, TableStored, access_data = AccessData, Sample=
 #####   Mittelwerte unter der Bedingung, dass die geforderte Anzahl Mindest-
 #####   beobachtungen erfüllt ist. Mit MV-Mittelwerten können später die gewichteten  
 #####   ICCs bestimmt werden.
-Company_Get <- function(DataPropList, TableStored, access_data = AccessData){
+Company_Get2 <- function(DataPropList, TableStored, access_data = AccessData){
 	## Im Prinzip zu ICC_Get() analoge Bestimmung von Marktwerten
 		
         CompProp <- DataPropList$Get()$COMPANY
@@ -777,25 +785,27 @@ Company_Get <- function(DataPropList, TableStored, access_data = AccessData){
         ## CompanyData Datensatz jedes Datum mit mindestens einem NA-Wert enthalten
         ## ist. Außerdem sind die Daten selbst Spaltennamen und können ohne Überprüfung
         ## mit "is.element" direkt ausgewählt werden.
+
 		CompanyTablePrae <- CompanyTable[CharacCol ,c(DscdCol, DatPrae),with=F]
 		CompanyTablePost <- CompanyTable[CharacCol ,c(DscdCol, DatPost),with=F]
 		
 		##Mv <- rep(NA,length(DatPrae))
         Mv <- rep(NA,2)
 		Mv <- data.frame("TaMv" = Mv, "AcMvPrae" = Mv,"AcMvPost" = Mv)
-
+  
 		temp <- CompanyTablePrae[[DscdCol]] == SdcData$TargetDscd               
         ##Mv$TaMv <- as.numeric(CompanyTablePrae[,DatPrae,with=F][temp])
         Mv[1,"TaMv"] <- DatPrae	
+    
         Mv[2,"TaMv"] <- as.numeric(CompanyTablePrae[,DatPrae,with=F][temp])	    
 		## hier direkte Auswahl der Daten über Spaltennamen ohne is.element oder
         ## Überprüfung auf nicht verzeichnete Daten
-        
+
 		temp <- CompanyTablePrae[[DscdCol]] == SdcData$AcquirorDscd             
 		##Mv$AcMvPrae <- as.numeric(CompanyTablePrae[,DatPrae,with=F][temp])	  
         Mv[1,"AcMvPrae"] <- DatPrae
         Mv[2,"AcMvPrae"] <- as.numeric(CompanyTablePrae[,DatPrae,with=F][temp])    
-
+    
         ##Mv$AcMvPost <- as.numeric(CompanyTablePost[,DatPost,with=F][temp])           
 		Mv[1,"AcMvPost"] <- DatPost
         Mv[2,"AcMvPost"] <- as.numeric(CompanyTablePost[,DatPost,with=F][temp]) 
@@ -810,7 +820,7 @@ Company_Get <- function(DataPropList, TableStored, access_data = AccessData){
 		Mv
 		}
 
-Company_Get2 <- function(DataPropList, TableStored, access_data = AccessData){
+Company_Get<- function(DataPropList, TableStored, access_data = AccessData){
 	## Im Prinzip zu ICC_Get() analoge Bestimmung von Marktwerten
 		
         CompProp <- DataPropList$Get()$COMPANY
@@ -960,6 +970,30 @@ Compute_MandA_Table <- function(DataPropList,TableStored){
                     AccessData$Get()$ICC$TaIcc, AccessData$Get()$ICC$AcIccPrae, AccessData$Get()$ICC$AcIccPost,
                     AccessData$Get()$COMPANY$TaMv, AccessData$Get()$COMPANY$AcMvPrae, AccessData$Get()$COMPANY$AcMvPost)	
             }
+         ##DatEffective = DatEffective, DatAnnounced = DatAnnounced 
+    
+        ## Benennung der Spalten der finalen Tabelle
+        IccColNames <- c(paste("TaIcc",-(nobs:1),sep="_"),paste("AcIccPrae",-(nobs:1),sep="_"),
+                       paste("AcIccPost",(1:nobs),sep="_+"))
+       
+
+        MvColNames  <- c(paste("TaMv",-(nobs:1),sep="_"),paste("AcMvPrae",-(nobs:1),sep="_"),
+                        paste("AcMvPost",(1:nobs),sep="_"))
+       
+
+        names(maa_table)<-c("Date","Acquiror_Dscd","Target_Dscd","Perc_Shares_Acquired","Acquiror_Sic","Target_Sic",
+                    "SicSep",IccColNames,MvColNames)
+        
+        ## Änderung der Datentypen der Tabelle auf numeric
+        maa_table[,c("Perc_Shares_Acquired",IccColNames,MvColNames)]<-apply(maa_table[,c("Perc_Shares_Acquired",
+                    "TaIcc","AcIccPrae","AcIccPost","TaMv","AcMvPrae","AcMvPost")],2,as.numeric)
+        
+        ## Zuweisung neuer Spalte, die angibt, an welcher Sic Ziffer sich die Targer und Acquiror Sic unterscheiden
+        maa_table$SicSep <- Sic_Separation(maa_table)
+        ##maa_table <- Calc_Weighted_Icc_prae(maa_table=maa_table)
+        ##maa_table <- Calc_Icc_Diff (maa_table=maa_table)
+        maa_table
+        }    
             
             
 Compute_MandA_Table2 <- function(DataPropList,TableStored){
@@ -1012,7 +1046,6 @@ Compute_MandA_Table2 <- function(DataPropList,TableStored){
         
             ## Start der tatsächlichen Datenentnahme und der Berechnung     
             for (i_row in 1:laenge){ ## i_row für jede Zeile des SDC Datensatzes
-
                 AccessData$retrieveSdc(DataPropList, TableStored, i_row,AccessData) ## Anwendung von Sdc_Get()
                 AccessData$retrieveIcc(DataPropList, TableStored, AccessData, Sample=TRUE) ## Anwendung von Icc_Get()
                 AccessData$retrieveCompany(DataPropList, TableStored, AccessData) ## Anwendung von Company_Get()
@@ -1024,7 +1057,7 @@ Compute_MandA_Table2 <- function(DataPropList,TableStored){
                     AccessData$Get()$ICC$TaIcc, AccessData$Get()$ICC$AcIccPrae, AccessData$Get()$ICC$AcIccPost,
                     AccessData$Get()$COMPANY$TaMv, AccessData$Get()$COMPANY$AcMvPrae, AccessData$Get()$COMPANY$AcMvPost)	
             }            
-     DatEffective = DatEffective, DatAnnounced = DatAnnounced 
+     ##DatEffective = DatEffective, DatAnnounced = DatAnnounced 
     
         ## Benennung der Spalten der finalen Tabelle
         ##IccColNames <- c(paste("TaIcc",-(nobs:1),sep="_"),paste("AcIccPrae",-(nobs:1),sep="_"),
@@ -1035,12 +1068,12 @@ Compute_MandA_Table2 <- function(DataPropList,TableStored){
         ##                paste("AcMvPost",(1:nobs),sep="_"))
         MvColNames  <- c("MvTaDate","TaMv","MvAcPraeDate","AcMvPrae","MvAcPostDate","AcMvPost")
 
-        names(maa_table)<-c("Date","Acquiror_Dscd","Target_Dscd","Perc_Shares_Acquired","Acquiror_Sic","Target_Sic",
-                    "SicSep",IccColNames,MvColNames)
+        names(maa_table)<-c("DateEffective","DateAnnounced","Acquiror_Dscd","Target_Dscd","Perc_Shares_Acquired","Acquiror_Sic","Target_Sic",
+                   "SicSep",IccColNames,MvColNames)
         
         ## Änderung der Datentypen der Tabelle auf numeric
-        maa_table[,c("Perc_Shares_Acquired",IccColNames,MvColNames)]<-apply(maa_table[,c("Perc_Shares_Acquired",
-                    "TaIcc","AcIccPrae","AcIccPost","TaMv","AcMvPrae","AcMvPost")],2,as.numeric)
+        num_col<-c("Perc_Shares_Acquired","TaIcc","AcIccPrae","AcIccPost","TaMv","AcMvPrae","AcMvPost") 
+        maa_table[,num_col]<-apply(maa_table[,num_col],2,as.numeric)
         
         ## Zuweisung neuer Spalte, die angibt, an welcher Sic Ziffer sich die Targer und Acquiror Sic unterscheiden
         maa_table$SicSep <- Sic_Separation(maa_table)
