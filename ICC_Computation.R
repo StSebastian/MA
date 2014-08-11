@@ -95,9 +95,9 @@ Sdc_Set <- function(DatEffCol = "SpDateEff",DatAnnCol ="SpDateAnn", AcCol = "SpA
 #####   sondern mit anderen "Set()"-Funktionen durch die Funktion 
 #####   Data_Prop() in der Liste DataPropList gespeichert
 Icc_Set <- function(DatCol = "Datum", DscdCol = "Company_Code", 
-                        IccCol = "ICC_CT"){
+                        IccCol = "ICC_CT", MvCol = "MarketCap"){
         
-        ICCCol <- list("DatCol" = DatCol, "DscdCol" = DscdCol , "IccCol" = IccCol)
+        ICCCol <- list("DatCol" = DatCol, "DscdCol" = DscdCol , "IccCol" = IccCol,"MvCol" = MvCol)
         }
 
 ##2.3	Company_Set(): Funktion, die Spaltennamen für CompanyData-Tabelle 
@@ -328,6 +328,7 @@ Icc_Period_Get <- function(DateAnnounced,DateEffective){
         ##Datum$mday <- 15
         ##DatPost <- DatPrae <- rep(Datum,icc_period_data$Far - icc_period_data$Close+1)
         IccPraeDat$mday <- IccPraeDat$mday - 7    
+        IccPraeDat<- as.POSIXlt(as.character(IccPraeDat))
         if(IccPraeDat$mday<=28){IccPraeDat$mon <- IccPraeDat$mon - 1}   
         IccPostDat$year <- IccPostDat$year + 1 
         IccPostDat$mon <- 4   
@@ -377,6 +378,7 @@ Icc_Get<- function(DataPropList, TableStored, access_data = AccessData, Sample=F
         DatCol  <- IccProp$DatCol
         DscdCol <- IccProp$DscdCol
         IccCol  <- IccProp$IccCol
+        MvCol  <- IccProp$MvCol
         
         ## Zwischenspeicherung der Zeitfenster Daten
         ##DatPrae <- sort(PeriodData$DatPrae)
@@ -385,7 +387,7 @@ Icc_Get<- function(DataPropList, TableStored, access_data = AccessData, Sample=F
         ##Size    <- PeriodData$Size
         
         ## Aufruf des ICC Datensatzes
-        IccTable  <- IccTable[,c(DatCol,DscdCol,IccCol),with=F]             ##
+        IccTable  <- IccTable[,c(DatCol,DscdCol,IccCol,MvCol),with=F]             ##
         
         ## data.frame zur Speicherung der ICCs
         ##ICC <- rep(NA,length(DatPrae))
@@ -394,12 +396,12 @@ Icc_Get<- function(DataPropList, TableStored, access_data = AccessData, Sample=F
         ## Am Ende soll ein Dataframe mit ICC Zeitreihen für das Target vor, den
         ## Acquiror vor und nach M&A im ICC data.frame gespeichert werden.
         ## Der data.frame "ICC" ist die leere Vorlage.
-        ICC <- data.frame("TaIcc" = ICC, "AcIccPrae" = ICC,"AcIccPost" = ICC)
+        ICC <- data.frame("TaIcc" = ICC, "AcIccPrae" = ICC,"AcIccPost" = ICC,"TaMv" = ICC, "AcMvPrae" = ICC,"AcMvPost" = ICC)
 
             temp  <- IccTable[[DscdCol]] == as.character(SdcData$TargetDscd) ############
             ## Filterung der Target-Datastream Codeeinträge im ICC Datensatz
             
-            tempTA  <- IccTable[temp, c(DatCol,IccCol),with=F]          
+            tempTA  <- IccTable[temp, c(DatCol,IccCol,MvCol),with=F]          
             ## Neuzuweisung des ICC Datensatzes mit ausschließlich Informationen zum Target 
             
             ##tempDat <- is.element(tempTA[[DatCol]],DatPrae)
@@ -415,13 +417,15 @@ Icc_Get<- function(DataPropList, TableStored, access_data = AccessData, Sample=F
             else{        
                 ICC[1,"TaIcc"] <- tempTA[tempDat, DatCol,with=F]
                 ICC[2,"TaIcc"] <- tempTA[tempDat, IccCol,with=F]
+                ICC[1,"TaMv"] <- tempTA[tempDat, DatCol,with=F]
+                ICC[2,"TaMv"] <- tempTA[tempDat, MvCol,with=F]
                 }
             ##ICC[IccExist,"TaIcc"] <- tempTA[tempDat, IccCol,with=F]         
             ## Zuweisung der ICCs zum leeren data.frame "ICC"
             
             ## Analoge Berechnung für ICC des Acquirors
             temp  <- IccTable[[DscdCol]] == SdcData$AcquirorDscd            
-            tempAC  <- IccTable[temp, c(DatCol,IccCol),with=F]              
+            tempAC  <- IccTable[temp, c(DatCol,IccCol,MvCol),with=F]              
             ##tempDat <- is.element(tempAC[[DatCol]],DatPrae)                 
             ##IccExist <- is.element(DatPrae,tempAC[[DatCol]][tempDat])
             tempDat <- tempAC[[DatCol]]==DatPrae
@@ -431,6 +435,8 @@ Icc_Get<- function(DataPropList, TableStored, access_data = AccessData, Sample=F
             else{    
                 ICC[1,"AcIccPrae"] <- tempAC[tempDat, DatCol,with=F]
                 ICC[2,"AcIccPrae"] <- tempAC[tempDat, IccCol,with=F]
+                ICC[1,"AcMvPrae"] <- tempAC[tempDat, DatCol,with=F]
+                ICC[2,"AcMvPrae"] <- tempAC[tempDat, MvCol,with=F]
                 }
             ##tempDat <- is.element(tempAC[[DatCol]],DatPost)     
             ##IccExist <- is.element(DatPost,tempAC[[DatCol]][tempDat])  
@@ -439,7 +445,9 @@ Icc_Get<- function(DataPropList, TableStored, access_data = AccessData, Sample=F
             if(length(tempDat)==0|sum(tempDat)==0){ICC[1:2,"AcIccPost"] <-NA}
             else{ 
                 ICC[1,"AcIccPost"] <- tempAC[tempDat, DatCol,with=F]
-                ICC[2,"AcIccPost"] <- tempAC[tempDat, IccCol,with=F]            
+                ICC[2,"AcIccPost"] <- tempAC[tempDat, IccCol,with=F]
+                ICC[1,"AcMvPost"] <- tempAC[tempDat, DatCol,with=F]
+                ICC[2,"AcMvPost"] <- tempAC[tempDat, MvCol,with=F]    
                 }
             ## Im folgenden wird der data.frame "ICC" in ein Objekt vom Typ zoo umgewandelt.
             ## Darin werden für jede Spalte (TaIcc, AcIccPrae, AcIccPost) rollierend Mittelwerte
@@ -592,7 +600,7 @@ Compute_MandA_Table <- function(DataPropList,TableStored){
         ##icc_period_data <- DataPropList$Get()$ICCPeriod
         ##nobs <- ((icc_period_data$Far - icc_period_data$Close+1)-icc_period_data$Size+1)
         nobs <- 2
-        maa_table <- as.data.frame(matrix(rep(NA,(8+6*nobs)*laenge),nrow=laenge,ncol=8+6*nobs))
+        maa_table <- as.data.frame(matrix(rep(NA,(8+9*nobs)*laenge),nrow=laenge,ncol=8+9*nobs))
         
         ## Aufruf von Funktion 3.2
         Company_Prop_List_Set(TableStored, DataPropList) 
@@ -612,6 +620,7 @@ Compute_MandA_Table <- function(DataPropList,TableStored){
                     AccessData$Get()$SDC$AcquirorDscd, AccessData$Get()$SDC$TargetDscd, 
                     AccessData$Get()$SDC$ShareAc, AccessData$Get()$SDC$SicAc , AccessData$Get()$SDC$SicTa , NA,
                     AccessData$Get()$ICC$TaIcc, AccessData$Get()$ICC$AcIccPrae, AccessData$Get()$ICC$AcIccPost,
+                    AccessData$Get()$ICC$TaMv, AccessData$Get()$ICC$AcMvPrae, AccessData$Get()$ICC$AcMvPost,
                     AccessData$Get()$COMPANY$TaMv, AccessData$Get()$COMPANY$AcMvPrae, AccessData$Get()$COMPANY$AcMvPost)	
             }            
      ##DatEffective = DatEffective, DatAnnounced = DatAnnounced 
@@ -619,7 +628,8 @@ Compute_MandA_Table <- function(DataPropList,TableStored){
         ## Benennung der Spalten der finalen Tabelle
         ##IccColNames <- c(paste("TaIcc",-(nobs:1),sep="_"),paste("AcIccPrae",-(nobs:1),sep="_"),
         ##                paste("AcIccPost",(1:nobs),sep="_+"))
-          IccColNames <- c("IccTaDate","TaIcc","IccAcPraeDate","AcIccPrae","IccAcPostDate","AcIccPost")
+        IccColNames <- c("IccTaDate","TaIcc","IccAcPraeDate","AcIccPrae","IccAcPostDate","AcIccPost",
+                           "MarCapTaDate","TaMarCap","MarCapAcPraeDate","AcMarCapPrae","MarCapAcPostDate","AcMarCapPost")
 
         ##MvColNames  <- c(paste("TaMv",-(nobs:1),sep="_"),paste("AcMvPrae",-(nobs:1),sep="_"),
         ##                paste("AcMvPost",(1:nobs),sep="_"))
@@ -629,14 +639,21 @@ Compute_MandA_Table <- function(DataPropList,TableStored){
                    "SicSep",IccColNames,MvColNames)
         
         ## Änderung der Datentypen der Tabelle auf numeric
-        num_col<-c("Perc_Shares_Acquired","TaIcc","AcIccPrae","AcIccPost","TaMv","AcMvPrae","AcMvPost") 
+        num_col<-c("Perc_Shares_Acquired","TaIcc","AcIccPrae","AcIccPost","TaMv","AcMvPrae","AcMvPost","TaMarCap","AcMarCapPrae","AcMarCapPost") 
         maa_table[,num_col]<-apply(maa_table[,num_col],2,as.numeric)
+         maa_table
         
         ## Zuweisung neuer Spalte, die angibt, an welcher Sic Ziffer sich die Targer und Acquiror Sic unterscheiden
         maa_table$SicSep <- Sic_Separation(maa_table)
         maa_table <- Calc_Weighted_Icc_prae(maa_table=maa_table)
         maa_table <- Calc_Icc_Diff (maa_table=maa_table)
         maa_table <- Calc_Adj_Icc_Diff(maa_table=maa_table)
+        maa_table <- Calc_Weighted_Icc_prae2(maa_table=maa_table)
+        maa_table <- Calc_Icc_Diff2 (maa_table=maa_table)
+        maa_table <- Calc_Mv_Diff(maa_table=maa_table)
+        maa_table <- Calc_Mv_Diff2(maa_table=maa_table)
+        maa_table <- Calc_MvSum_Diff(maa_table=maa_table)
+        maa_table <- Calc_MvSum_Diff2(maa_table=maa_table)
         maa_table
         }
  
@@ -742,6 +759,77 @@ Calc_Icc_Diff <- function(maa_table = MaATable, weighted_icc_prae ="WeightedIccP
             maa_table
             }
 
+Calc_Weighted_Icc_prae2 <- function(maa_table = MaATable,acquiror_icc_prae = "AcIccPrae",target_icc_prae = "TaIcc",
+                            acquiror_mv_prae="AcMarCapPrae",target_mv_prae = "TaMarCap",share_acquired = "Perc_Shares_Acquired"){
+            ## Bestimmung, wie viele Berechnungen im Interval vor M&A durchgeführt wurden 
+            ##n_icc_calc <- length(grep( acquiror_icc_prae,colnames(maa_table)))
+           ## n_row <- nrow(maa_table)
+            
+            ## Erstellung vom leeren Datensatzes als Vorlage
+            ##weighted_icc <- data.frame("WeightedIccPrae_-9"= rep(NA,n_row))
+            
+            ## Erstellung von Namen der neuen Spalten
+            ##weighted_icc_col_names <- paste("WeightedIccPrae",n_icc_calc:1,sep="_-")
+            ##weighted_icc[,weighted_icc_col_names] <- rep(NA,n_row)
+            ##weighted_icc<-weighted_icc[,-1]
+            
+            ## Zwischenspeicherung von Spalte, die Information zu erworbenen
+            ## Unternehmensanteil beinhaltet
+            share <- maa_table[,share_acquired] 
+            
+            ## Index i ist Zahl, die an die Namen "AcIccPrae" und "TaIcc" angehängt wird, um
+            ## so die richtigen Target- und Acquiror- ICC bzw. MV Spalten vom MaATable zu selektieren. 
+            ##for(i in 1:n_icc_calc){
+            
+                   ## Auswahl der Spalten   
+                   share <- maa_table[,share_acquired] 
+                   acquiror_icc_col <- maa_table[acquiror_icc_prae]
+                   acquiror_mv_col  <- maa_table[acquiror_mv_prae]
+                   target_icc_col   <- maa_table[target_icc_prae]
+                   target_mv_col    <- maa_table[target_mv_prae]
+                           
+                   ## Berechnung der gewichteten ICC 
+                   weighted_icc_col <- ((acquiror_icc_col*acquiror_mv_col  +  target_icc_col*target_mv_col*share)
+                                                 /       (acquiror_mv_col  +  target_mv_col*share))
+                   
+                   names(weighted_icc_col)<-"WeightedMarCapIccPrae"
+            ## Anhängen der neuen Spalten an MaATable        
+            ##maa_table <- cbind(maa_table,as.data.table(weighted_icc))
+            maa_table <- cbind(maa_table,weighted_icc_col)
+            maa_table
+            }
+
+##5.4	Calc_Icc_Diff(): Berechnet aus gewichteten ICCs und korrespondierenden post M&A ICC des 
+#####   Acquirors die ICC Differenz, die durchc den M&A entstanden ist.            
+Calc_Icc_Diff2 <- function(maa_table = MaATable, weighted_icc_prae ="WeightedMarCapIccPrae", acquiror_icc_prae ="AcIccPost"){
+            ## Bestimmung, wieviele Berechnungen im Intervall vor M&A durchgeführt wurden
+            ##n_icc_calc <- length(grep(weighted_icc_prae,colnames(maa_table)))
+            ##n_row <- nrow(maa_table)
+              
+            ## Erstellung eines leeren Datensatzes als Vorlage        
+            ##diff_icc <- data.frame("IccDifference_1"= rep(NA,n_row))
+            ##diff_icc_col_names <- paste("IccDifference",1:n_icc_calc,sep="_")
+            ##diff_icc[,diff_icc_col_names] <- rep(NA,n_row)
+            
+            ## Analog zu Calc_Weighted_Icc_prae() werden durch Index i die korrespondierenden 
+            ## WeightedICC und AcIccPost ausgewählt und aus ihnen die ICC Differenz der M&As
+            ## bestimmt    
+            ## Index i ist eine Zahl, die an die Namen "AcIccPrae" und "TaIcc" angehängt wird, um
+            ## so die richtigen Target- und Acquiror- ICC bzw. MV Spalten vom MaATable zu selektieren.
+  
+                   
+                   ## Auswahl der Spalten    
+                   weighted_icc_col <- maa_table[weighted_icc_prae]
+                   acquiror_icc_col <- maa_table[acquiror_icc_prae]
+                   
+                   ## Berechnung der Differenz
+                   diff_icc <- acquiror_icc_col - weighted_icc_col
+                   names( diff_icc)<-"MarCapIccDifference"
+            ## Anhängen der neuen Spalten an MaATable          
+            maa_table <- cbind(maa_table,diff_icc)
+            maa_table
+            }            
+            
 
 Calc_Adj_Icc_Diff <- function(maa_table = MaATable, icc_diff ="IccDifference", acquiror_mv_prae="AcMvPrae",
                                 target_mv_prae = "TaMv",share_acquired = "Perc_Shares_Acquired"){
@@ -760,12 +848,45 @@ Calc_Adj_Icc_Diff <- function(maa_table = MaATable, icc_diff ="IccDifference", a
             ## Anhängen der neuen Spalten an MaATable          
             maa_table <- cbind(maa_table,adj_diff_icc)
             maa_table
-            }            
+            }    
+
+Calc_Mv_Diff <- function(maa_table = MaATable, mv_prae="AcMvPrae", mv_post = "AcMvPost",
+                            share_acquired = "Perc_Shares_Acquired"){
+                            
+                            mv_diff<-maa_table[ mv_post]-maa_table[mv_prae]
+                            names(mv_diff)<-"MvDiff"
+                            maa_table <- cbind(maa_table,mv_diff)
+                        }   
+
+Calc_Mv_Diff2 <- function(maa_table = MaATable, mcap_prae="AcMarCapPrae", mcap_post = "AcMarCapPost",
+                            share_acquired = "Perc_Shares_Acquired"){
+                            
+                            mcap_diff<-maa_table[mcap_post]-maa_table[mcap_prae]
+                            names(mcap_diff)<-"MCapDiff"
+                            maa_table <- cbind(maa_table,mcap_diff)
+                        }    
+
+Calc_MvSum_Diff <- function(maa_table = MaATable, mv_prae_ac="AcMvPrae", mv_prae_ta="TaMv", mv_post = "AcMvPost",
+                            share_acquired = "Perc_Shares_Acquired"){
+                            
+                            mv_diff<-maa_table[ mv_post]-maa_table[mv_prae_ac]-maa_table[mv_prae_ta]*maa_table[share_acquired]
+                            names(mv_diff)<-"SumMvDiff"
+                            maa_table <- cbind(maa_table,mv_diff)
+                        }   
+
+Calc_MvSum_Diff2 <- function(maa_table = MaATable, mcap_prae_ac="AcMarCapPrae",mcap_prae_ta="TaMarCap", mcap_post = "AcMarCapPost",
+                            share_acquired = "Perc_Shares_Acquired"){
+                            
+                            mcap_diff<-maa_table[mcap_post]-maa_table[mcap_prae_ac]-maa_table[mcap_prae_ta]*maa_table[share_acquired]
+                            names(mcap_diff)<-"SumMCapDiff"
+                            maa_table <- cbind(maa_table,mcap_diff)
+                        }                           
             
             
 ## Start der Berechnung und Speicherung des Datensatzes           
    
 ## ICC_CT
+    DataPropList$setICC(IccCol="ICC_CT")
     MaATable_CT<-Compute_MandA_Table(DataPropList,TableStored)    
 
     write.table(MaATable_CT,"MaATable_CT.txt",sep=";",col.names=T,row.names=F)
